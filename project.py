@@ -1,6 +1,8 @@
 import pygame as pg
 import numpy as np
 from numba import njit
+import sys
+import time
 
 def main():
     pg.init()
@@ -37,7 +39,8 @@ def main():
         surf = pg.transform.scale(surf, (800, 600))
         fps = int(clock.get_fps())
         
-        pg.display.set_caption("Pycasting maze - FPS: " + str(fps) + " Forwards: " + str(current_speed) + " Backwards: " + str(backwards_speed))
+        
+        pg.display.set_caption("Pycasting maze - FPS: " + str(fps) + " Speed: " + str(current_speed - backwards_speed))
         
         screen.blit(surf, (0,0))
         
@@ -53,9 +56,6 @@ def main():
                     current_speed = 0
         if backwards_speed < 0.002 and moving_backwards:
             backwards_speed += accel
-        if not moving_forward:
-            if current_speed > min_speed: 
-                current_speed -= accel
         if not moving_backwards:
             if backwards_speed > min_speed: 
                 backwards_speed -= accel
@@ -73,21 +73,22 @@ def movement(posx, posy, rot, keys, et, max_speed, current_speed, accel, backwar
     
     if keys[pg.K_RIGHT]:
         rot = rot + 0.001*et
-   
-While True: current_speed > 0.006
-        if keys[pg.K_LEFT]:
-        rot = rot - 0.001*et
-    
-        if keys[pg.K_RIGHT]:
-        rot = rot + 0.001*et
-       
-    
-    x, y = x + np.cos(rot)*current_speed*et,  y + np.sin(rot)*current_speed*et
-    
         
-    
+        
+
+    x, y = x + np.cos(rot)*current_speed*et,  y + np.sin(rot)*current_speed*et
+
     x, y = x - np.cos(rot)*backwards_speed*et,  y - np.sin(rot)*backwards_speed*et
-    
+
+    if keys[pg.K_DOWN] and backwards_speed >= max_speed * 0.5:
+        drift = backwards_speed * 0.25 * et
+        if keys[pg.K_LEFT]:
+            x += np.sin(rot) * drift
+            y -= np.cos(rot) * drift
+        elif keys[pg.K_RIGHT]:
+            x -= np.sin(rot) * drift
+            y += np.cos(rot) * drift
+
     posx, posy = (x, y)
     if not keys[pg.K_UP] and not keys[pg.K_DOWN]:
         return posx, posy, rot, False, False
