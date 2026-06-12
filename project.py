@@ -74,7 +74,12 @@ def movement(posx, posy, rot, keys, et, max_speed, current_speed, accel, backwar
     if keys[pg.K_RIGHT]:
         rot = rot + 0.001*et
    
+While True: current_speed > 0.006
+        if keys[pg.K_LEFT]:
+        rot = rot - 0.001*et
     
+        if keys[pg.K_RIGHT]:
+        rot = rot + 0.001*et
        
     
     x, y = x + np.cos(rot)*current_speed*et,  y + np.sin(rot)*current_speed*et
