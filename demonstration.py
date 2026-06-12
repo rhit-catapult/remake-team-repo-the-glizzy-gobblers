@@ -1,11 +1,11 @@
 import pygame as pg
 import numpy as np
-from numba import njit
 import sys
+import PIL as image
 
 def main():
     pg.init()
-    screen = pg.display.set_mode((800,600))
+    screen = pg.display.set_mode((1200,900))
     running = True
     clock = pg.time.Clock()
 
@@ -13,11 +13,11 @@ def main():
     halfvres = 150 #vertical resolution/2
 
     mod = hres/60 #scaling factor (60° fov)
-    posx, posy, rot = 0, 0, 0
+    posx, posy, rot = 26.926, 17.938, 1.5 * np.pi #starting position and rotation angle
     moving_forward = False
     moving_backwards = False
-    frame = np.random.uniform(0,1, (hres, halfvres*2, 3))
-    kart = pg.surfarray.array3d(pg.image.load('MarioKart.png'))
+    frame = np.random.uniform(0,1, (hres, halfvres*2, 3)) # 2d array that stores the image
+    kart = pg.surfarray.array3d(pg.image.load('MarioKart.png')) # import map
     sky = pg.image.load('skybox.jpg')
     sky = pg.surfarray.array3d(pg.transform.scale(sky, (360, halfvres*2)))/255
     ns = halfvres/((halfvres+0.1-np.linspace(0, halfvres, halfvres)))# depth
@@ -26,35 +26,39 @@ def main():
     min_speed = 0
     current_speed = 0
     backwards_speed = 0
-    accel = 0.00005
+    accel = 0.000033
 
     while running:
         for event in pg.event.get():
             if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
                 running = False
-
-        frame = new_frame(posx, posy, rot, frame, sky, kart, hres, halfvres, mod, ns)
-
-        surf = pg.surfarray.make_surface(frame*255)
-        surf = pg.transform.scale(surf, (800, 600))
-        fps = int(clock.get_fps())
+    
         
-        pg.display.set_caption("Pycasting maze - FPS: " + str(fps) + " Forwards: " + str(current_speed) + " Backwards: " + str(backwards_speed))
+        frame = new_frame(posx, posy, rot, frame, sky, kart, hres, halfvres, mod, ns)
+        surf = pg.surfarray.make_surface(frame*255)
+        surf = pg.transform.scale(surf, (1200, 900))
+        fps = int(clock.get_fps())
+
+        pg.display.set_caption("Pycasting maze - FPS: " + str(fps) + " Forwards: " + str(max_speed) + " Backwards: " + str(backwards_speed) + " Position: " + str(posx) + ", " + str(posy))
         
         screen.blit(surf, (0,0))
         
         pg.display.update()
-
+        print(frame[round(posx)][round(posy)])
+        if tuple(frame[round(posx)][round(posy)]) != [0.00032295, 0.00099962, 0.00169166] and tuple(frame[round(posx)][round(posy)] != [0.00019992, 0.0008765, 0.00156863]):
+            max_speed = 0.008
+        else:
+            max_speed = 0.008
         if current_speed < max_speed and moving_forward:
             current_speed += accel
         if not moving_forward:
             if current_speed > min_speed: 
-                current_speed -= accel/4
-                if(current_speed < accel and
-                   current_speed > accel * -1):
+                current_speed -= accel/2
+                if(current_speed < accel * 3 and
+                   current_speed > accel * -3):
                     current_speed = 0
         if backwards_speed < 0.002 and moving_backwards:
-            backwards_speed += accel/4
+            backwards_speed += accel/2
         if not moving_backwards:
             if backwards_speed > min_speed: 
                 backwards_speed -= accel
@@ -71,7 +75,6 @@ def movement(posx, posy, rot, keys, et, max_speed, current_speed, accel, backwar
         rot = rot - 0.001*et
     
     if keys[pg.K_RIGHT]:
-        x, y = x + np.cos(rot)*current_speed*et,  y + np.sin(rot)*current_speed*et
         rot = rot + 0.001*et
    
     
@@ -113,10 +116,12 @@ def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, depth):
             shade = np.dstack((shade, shade, shade))
             rot_i = rot + np.deg2rad(i/mod - 30)
             sin, cos, cos2 = np.sin(rot_i), np.cos(rot_i), np.cos(np.deg2rad(i/mod-30))
-            frame[i][:halfvres] = sky[int(np.rad2deg(rot_i)%360)][:halfvres]/255
+            frame[i][:halfvres] = sky[int(np.rad2deg(rot_i)%359)][:halfvres]/255
             xs, ys = posx+depth*cos/cos2, posy+depth*sin/cos2
             xxs, yys = (xs/30%1*1023).astype('int'), (ys/30%1*1023).astype('int')
             frame[i][2*halfvres-len(depth):2*halfvres] = shade*floor[np.flip(xxs),np.flip(yys)]/255
+            
+            
 
     return frame
 
