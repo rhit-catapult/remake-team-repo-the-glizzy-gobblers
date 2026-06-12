@@ -2,12 +2,15 @@ import pygame as pg
 import numpy as np
 from numba import njit
 import sys
+from PIL import Image
+
 
 def main():
     pg.init()
     screen = pg.display.set_mode((800,600))
     running = True
     clock = pg.time.Clock()
+    clock.tick(60)
 
     hres = 180 #horizontal resolution
     halfvres = 150 #vertical resolution/2
@@ -22,11 +25,11 @@ def main():
     sky = pg.surfarray.array3d(pg.transform.scale(sky, (360, halfvres*2)))/255
     ns = halfvres/((halfvres+0.1-np.linspace(0, halfvres, halfvres)))# depth
     
-    max_speed = 0.004
+    max_speed = 0.008
     min_speed = 0
     current_speed = 0
     backwards_speed = 0
-    accel = 0.00005
+    accel = 0.00005 
 
     while running:
         for event in pg.event.get():
@@ -39,7 +42,7 @@ def main():
         surf = pg.transform.scale(surf, (800, 600))
         fps = int(clock.get_fps())
         
-        pg.display.set_caption("Pycasting maze - FPS: " + str(fps) + " Forwards: " + str(current_speed) + " Backwards: " + str(backwards_speed))
+        pg.display.set_caption("Pycasting maze - FPS: " + str(fps) + " Speed: " + str(current_speed * 10000 - backwards_speed * 10000) + " MPH")
         
         screen.blit(surf, (0,0))
         
@@ -62,6 +65,8 @@ def main():
                    backwards_speed > accel * -1):
                     backwards_speed = 0
         posx, posy, rot, moving_forward, moving_backwards = movement(posx, posy, rot, pg.key.get_pressed(), clock.tick(), max_speed, current_speed, accel, backwards_speed)
+        
+
 
 def movement(posx, posy, rot, keys, et, max_speed, current_speed, accel, backwards_speed):
     
@@ -71,11 +76,8 @@ def movement(posx, posy, rot, keys, et, max_speed, current_speed, accel, backwar
         rot = rot - 0.001*et
     
     if keys[pg.K_RIGHT]:
-        x, y = x + np.cos(rot)*current_speed*et,  y + np.sin(rot)*current_speed*et
         rot = rot + 0.001*et
-   
-    
-       
+
     
     x, y = x + np.cos(rot)*current_speed*et,  y + np.sin(rot)*current_speed*et
     
@@ -91,7 +93,7 @@ def movement(posx, posy, rot, keys, et, max_speed, current_speed, accel, backwar
     elif not keys[pg.K_UP]:
         return posx, posy, rot, False, True
     return posx, posy, rot, True, True
-    
+
 
 # @njit()
 def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, depth):
@@ -119,7 +121,7 @@ def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, depth):
             frame[i][2*halfvres-len(depth):2*halfvres] = shade*floor[np.flip(xxs),np.flip(yys)]/255
 
     return frame
-
+    
 if __name__ == '__main__':
     main()
     pg.quit()
