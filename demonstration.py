@@ -1,18 +1,22 @@
 import pygame as pg
 import numpy as np
 import sys
-import PIL as image
+from PIL import Image
+
+
+
 
 def main():
     pg.init()
-    screen = pg.display.set_mode((1200,900))
-    running = True
+    screen = pg.display.set_mode((1200,900)) # size
+    running = True # while loop variable
     clock = pg.time.Clock()
 
-    hres = 180 #horizontal resolution
-    halfvres = 150 #vertical resolution/2
+    hres = 1000 #horizontal resolution
+    halfvres = 600 #vertical resolution/2
 
-    mod = hres/60 #scaling factor (60° fov)
+    scaling = 60
+    mod = hres/scaling #scaling factor (60° fov)
     posx, posy, rot = 26.926, 17.938, 1.5 * np.pi #starting position and rotation angle
     moving_forward = False
     moving_backwards = False
@@ -20,44 +24,42 @@ def main():
     kart = pg.surfarray.array3d(pg.image.load('MarioKart.png')) # import map
     sky = pg.image.load('skybox.jpg')
     sky = pg.surfarray.array3d(pg.transform.scale(sky, (360, halfvres*2)))/255
-    ns = halfvres/((halfvres+0.1-np.linspace(0, halfvres, halfvres)))# depth
+    ns = halfvres/((halfvres+0.1-np.linspace(0, halfvres, halfvres)))# depth used in calculating warp 
     
-    max_speed = 0.004
+    # speed variables below
+    max_speed = 0.006
     min_speed = 0
     current_speed = 0
     backwards_speed = 0
     accel = 0.000033
 
-    while running:
-        for event in pg.event.get():
+    while running: # game loop begins
+        for event in pg.event.get(): # detect exiting loop: escape works to close
             if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
                 running = False
     
         
-        frame = new_frame(posx, posy, rot, frame, sky, kart, hres, halfvres, mod, ns)
-        surf = pg.surfarray.make_surface(frame*255)
-        surf = pg.transform.scale(surf, (1200, 900))
+        frame = new_frame(posx, posy, rot, frame, sky, kart, hres, halfvres, mod, ns, scaling) # creates the frame (2d array representing colors)
+        surf = pg.surfarray.make_surface(frame*255) # assigns color to a screen object based on a 2d array representing pixels
+        surf = pg.transform.scale(surf, (1200, 900)) # scales it to the size of the screen
         fps = int(clock.get_fps())
 
-        pg.display.set_caption("Pycasting maze - FPS: " + str(fps) + " Forwards: " + str(max_speed) + " Backwards: " + str(backwards_speed) + " Position: " + str(posx) + ", " + str(posy))
+        pg.display.set_caption("Pycasting maze - FPS: " + str(fps) + " Forwards: " + str(current_speed) + " Backwards: " + str(backwards_speed) + " Position: " + str(posx) + ", " + str(posy)) # debug info
         
-        screen.blit(surf, (0,0))
+        screen.blit(surf, (0,0)) # draws the screen
         
         pg.display.update()
-        print(frame[round(posx)][round(posy)])
-        if tuple(frame[round(posx)][round(posy)]) != [0.00032295, 0.00099962, 0.00169166] and tuple(frame[round(posx)][round(posy)] != [0.00019992, 0.0008765, 0.00156863]):
-            max_speed = 0.008
-        else:
-            max_speed = 0.008
+        
+        # calculations on what speed should be sent to the movement method below
         if current_speed < max_speed and moving_forward:
             current_speed += accel
         if not moving_forward:
             if current_speed > min_speed: 
-                current_speed -= accel/2
+                current_speed -= accel * 2/3
                 if(current_speed < accel * 3 and
                    current_speed > accel * -3):
                     current_speed = 0
-        if backwards_speed < 0.002 and moving_backwards:
+        if backwards_speed < max_speed/3 and moving_backwards:
             backwards_speed += accel/2
         if not moving_backwards:
             if backwards_speed > min_speed: 
@@ -65,29 +67,37 @@ def main():
                 if(backwards_speed < accel and
                    backwards_speed > accel * -1):
                     backwards_speed = 0
-        posx, posy, rot, moving_forward, moving_backwards = movement(posx, posy, rot, pg.key.get_pressed(), clock.tick(), max_speed, current_speed, accel, backwards_speed)
+        
+        # calculating movement below
+        posx, posy, rot, moving_forward, moving_backwards = movement(posx, posy, rot, pg.key.get_pressed(), clock.tick(), max_speed, current_speed, backwards_speed)
 
-def movement(posx, posy, rot, keys, et, max_speed, current_speed, accel, backwards_speed):
+def movement(posx, posy, rot, keys, et, max_speed, current_speed, backwards_speed):
     
-    x, y = (posx, posy)
+    x, y = (posx, posy) # for organizational purposes
     
-    if keys[pg.K_LEFT]:
+    if keys[pg.K_LEFT]: # turn left
         rot = rot - 0.001*et
     
-    if keys[pg.K_RIGHT]:
+    if keys[pg.K_RIGHT]: #turn right
         rot = rot + 0.001*et
-   
-    
+
+    if color(posx, posy) not in (2, 23, 25, 29): #if the car is not on track it should be slower
+            current_speed *= 1/3
+            backwards_speed *= 2/3
+      
        
     
-    x, y = x + np.cos(rot)*current_speed*et,  y + np.sin(rot)*current_speed*et
+    x, y = x + np.cos(rot)*current_speed*et,  y + np.sin(rot)*current_speed*et # changes position based on speed forwards
     
         
     
-    x, y = x - np.cos(rot)*backwards_speed*et,  y - np.sin(rot)*backwards_speed*et
+    x, y = x - np.cos(rot)*backwards_speed*et,  y - np.sin(rot)*backwards_speed*et # changes position based on speed backwards
     
-    posx, posy = (x, y)
-    if not keys[pg.K_UP] and not keys[pg.K_DOWN]:
+    posx, posy = (x, y) # for organization purposes
+
+    # sends booleans determining if keys are held down
+    # decides if the car should accelerate or not
+    if not keys[pg.K_UP] and not keys[pg.K_DOWN]: 
         return posx, posy, rot, False, False
     elif not keys[pg.K_DOWN]:
         return posx, posy, rot, True, False
@@ -95,35 +105,25 @@ def movement(posx, posy, rot, keys, et, max_speed, current_speed, accel, backwar
         return posx, posy, rot, False, True
     return posx, posy, rot, True, True
     
-
-# @njit()
-def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, depth):
-    # for i in range(hres):
-    #     rot_i = rot + np.deg2rad(i/mod - 30)
-    #     sin, cos, cos2 = np.sin(rot_i), np.cos(rot_i), np.cos(np.deg2rad(i/mod - 30))
-    #     frame[i][:] = sky[int(np.rad2deg(rot_i)%359)][:]
-    #     for j in range(halfvres):
-    #         n = (halfvres/(halfvres-j))/cos2
-    #         x, y = posx + cos*n, posy + sin*n
-    #         xx, yy = int(x*2%1*99), int(y*2%1*99)
-
-    #         shade = 0.2 + 0.8*(1-j/halfvres)
-
-    #         # frame[i][halfvres*2-j-1] = shade*floor[xx][yy]
-    #         frame[i][halfvres*2-j-1:2*halfvres] = shade*floor[np.flip(xx),np.flip(yy)]/255
+def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, depth, scaling):
+    
     for i in range(hres):
-            shade = 0.4 + 0.6*(np.linspace(0, halfvres, halfvres)/halfvres)
-            shade = np.dstack((shade, shade, shade))
-            rot_i = rot + np.deg2rad(i/mod - 30)
-            sin, cos, cos2 = np.sin(rot_i), np.cos(rot_i), np.cos(np.deg2rad(i/mod-30))
-            frame[i][:halfvres] = sky[int(np.rad2deg(rot_i)%359)][:halfvres]/255
-            xs, ys = posx+depth*cos/cos2, posy+depth*sin/cos2
-            xxs, yys = (xs/30%1*1023).astype('int'), (ys/30%1*1023).astype('int')
-            frame[i][2*halfvres-len(depth):2*halfvres] = shade*floor[np.flip(xxs),np.flip(yys)]/255
+            shade = 0.4 + 0.6*(np.linspace(0, halfvres, halfvres)/halfvres) # half of the vertical resolution: creates an array of evenly spaced tuples
+            shade = np.dstack((shade, shade, shade)) # stacks the arrays to be 3d (3 2d arrays combine to be 3d)
+            rot_i = rot + np.deg2rad(i/mod - scaling/2) # gets the end of the field of view, the 30 should be half of fov
+            sin, cos, cos2 = np.sin(rot_i), np.cos(rot_i), np.cos(np.deg2rad(i/mod-scaling/2)) # creates warp based on trigonometry, pseudo 3d rendering
+            frame[i][:halfvres] = sky[int(np.rad2deg(rot_i)%359)][:halfvres]/255 # the top half of the world should look like the sky
+            xs, ys = posx+depth*cos/cos2, posy+depth*sin/cos2 # the position of the intended pixel 
+            xxs, yys = (xs/30%1*1023).astype('int'), (ys/30%1*1023).astype('int') #position of the pixel/30 mod 1 time 1023 rounded 
+            frame[i][2*halfvres-len(depth):2*halfvres] = shade*floor[np.flip(xxs),np.flip(yys)]/255 # puts the information into the correct place in frame
             
             
 
     return frame
+def color(posx, posy):
+    im = Image.open('MarioKart.png') # Can be many different formats. imported from PIL
+    pix = im.load() # loads the image. the image is 1024 by 1024, while posx and posy go up to 30, which means it needs converting
+    return pix[round(1023 * (posx % 30)/30), round(1023 * (posy % 30)/30)] # returns color of position as a single int. uses 1023 to avoid out of bounds error
 
 if __name__ == '__main__':
     main()
