@@ -3,17 +3,14 @@ import numpy as np
 import sys
 from PIL import Image
 
-
-
-
 def main():
     pg.init()
     screen = pg.display.set_mode((1200,900)) # size
     running = True # while loop variable
     clock = pg.time.Clock()
 
-    hres = 1000 #horizontal resolution
-    halfvres = 600 #vertical resolution/2
+    hres = 180 #horizontal resolution
+    halfvres = 150 #vertical resolution/2
 
     scaling = 60
     mod = hres/scaling #scaling factor (60° fov)
@@ -85,11 +82,7 @@ def movement(posx, posy, rot, keys, et, max_speed, current_speed, backwards_spee
             current_speed *= 1/3
             backwards_speed *= 2/3
       
-       
-    
     x, y = x + np.cos(rot)*current_speed*et,  y + np.sin(rot)*current_speed*et # changes position based on speed forwards
-    
-        
     
     x, y = x - np.cos(rot)*backwards_speed*et,  y - np.sin(rot)*backwards_speed*et # changes position based on speed backwards
     
@@ -117,8 +110,6 @@ def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, depth, sc
             xxs, yys = (xs/30%1*1023).astype('int'), (ys/30%1*1023).astype('int') #position of the pixel/30 mod 1 time 1023 rounded 
             frame[i][2*halfvres-len(depth):2*halfvres] = shade*floor[np.flip(xxs),np.flip(yys)]/255 # puts the information into the correct place in frame
             
-            
-
     return frame
 def color(posx, posy):
     im = Image.open('MarioKart.png') # Can be many different formats. imported from PIL

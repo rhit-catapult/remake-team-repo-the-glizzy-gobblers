@@ -22,7 +22,7 @@ def main():
     
     max_speed = 0.008
     min_speed = 0
-    current_speed = 0
+    current_speed = 0.002
     backwards_speed = 0
     accel = 0.00005
 
@@ -43,25 +43,7 @@ def main():
         
         pg.display.update()
 
-        if current_speed < max_speed and moving_forward:
-            current_speed += accel
-        if not moving_forward:
-            if current_speed > min_speed: 
-                current_speed -= accel
-                if(current_speed < accel and
-                   current_speed > accel * -1):
-                    current_speed = 0
-        if backwards_speed < 0.002 and moving_backwards:
-            backwards_speed += accel
-        if not moving_forward:
-            if current_speed > min_speed: 
-                current_speed -= accel
-        if not moving_backwards:
-            if backwards_speed > min_speed: 
-                backwards_speed -= accel
-                if(backwards_speed < accel and
-                   backwards_speed > accel * -1):
-                    backwards_speed = 0
+       
         posx, posy, rot, moving_forward, moving_backwards = movement(posx, posy, rot, pg.key.get_pressed(), clock.tick(), max_speed, current_speed, accel, backwards_speed)
 
 def movement(posx, posy, rot, keys, et, max_speed, current_speed, accel, backwards_speed):
@@ -76,20 +58,15 @@ def movement(posx, posy, rot, keys, et, max_speed, current_speed, accel, backwar
    
     
        
-    
-    x, y = x + np.cos(rot)*current_speed*et,  y + np.sin(rot)*current_speed*et
+    if keys[pg.K_UP]:
+        x, y = x + np.cos(rot)*current_speed*et,  y + np.sin(rot)*current_speed*et
     
         
-    
-    x, y = x - np.cos(rot)*backwards_speed*et,  y - np.sin(rot)*backwards_speed*et
+    if keys[pg.K_UP]:
+        x, y = x - np.cos(rot)*current_speed*et,  y - np.sin(rot)*current_speed*et
     
     posx, posy = (x, y)
-    if not keys[pg.K_UP] and not keys[pg.K_DOWN]:
-        return posx, posy, rot, False, False
-    elif not keys[pg.K_DOWN]:
-        return posx, posy, rot, True, False
-    elif not keys[pg.K_UP]:
-        return posx, posy, rot, False, True
+    
     return posx, posy, rot, True, True
     
 
