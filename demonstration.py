@@ -1,6 +1,7 @@
 import pygame as pg
 import numpy as np
 import sys
+import math
 
 def main():
     pg.init()
@@ -11,14 +12,13 @@ def main():
 
     hres = 180 #horizontal resolution
     halfvres = 150 #vertical resolution/2
-
     scaling = 60
-    mod = hres/scaling #scaling factor (60° fov)
+    mod = hres/scaling #scaling factor (fov set to 60)
     posx, posy, rot = 26.926, 17.938, 1.5 * np.pi #starting position and rotation angle
     moving_forward = False
     moving_backwards = False
     frame = np.random.uniform(0,1, (hres, halfvres*2, 3)) # 2d array that stores the image
-    kart = pg.surfarray.array3d(pg.image.load('MarioKart.png')) # import map
+    kart = pg.surfarray.array3d(pg.image.load('MarioKart2.png')) # import map
     sky = pg.image.load('skybox.jpg')
     sky = pg.surfarray.array3d(pg.transform.scale(sky, (360, halfvres*2)))/255
     ns = halfvres/((halfvres+0.1-np.linspace(0, halfvres, halfvres)))# depth used in calculating warp 
@@ -28,7 +28,8 @@ def main():
     current_speed = 0
     backwards_speed = 0
     accel = 0.00005
-
+    drift_speed = 0.0015
+    
     while running: # game loop begins
         for event in pg.event.get(): # detect exiting loop: escape works to close
             if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
@@ -63,25 +64,23 @@ def main():
                 if(backwards_speed < accel and
                    backwards_speed > accel * -1):
                     backwards_speed = 0
-        posx, posy, rot, moving_forward, moving_backwards = movement(posx, posy, rot, pg.key.get_pressed(), clock.tick(), max_speed, current_speed, accel, backwards_speed)
+        
+        # calculating movement below
+        posx, posy, rot, moving_forward, moving_backwards = movement(posx, posy, rot, pg.key.get_pressed(), clock.tick(), drift_speed, max_speed, current_speed, backwards_speed)
 
-def movement(posx, posy, rot, keys, et, max_speed, current_speed, accel, backwards_speed):
+def movement(posx, posy, rot, keys, et, drift_speed, max_speed, current_speed, backwards_speed):
     
     x, y = (posx, posy)
     
-    if keys[pg.K_LEFT]:
-        rot = rot - 0.001*et
-    
-    if keys[pg.K_RIGHT]:
-        x, y = x + np.cos(rot)*current_speed*et,  y + np.sin(rot)*current_speed*et
-        rot = rot + 0.001*et
+    if color(posx, posy) not in (22, 23, 25, 29, 30): #if the car is not on track it should be slower
+        current_speed *= 1/3
+        backwards_speed *= 1/3
+    x,y, rot, current_speed, = drift(x, y, rot, keys, et, drift_speed, max_speed, current_speed)
+
+    print(color(posx,posy))
    
-    
-       
-    
-    x, y = x + np.cos(rot)*current_speed*et,  y + np.sin(rot)*current_speed*et
-    
-        
+      
+    x, y = x + np.cos(rot)*current_speed*et,  y + np.sin(rot)*current_speed*et # changes position based on speed forwards
     
     x, y = x - np.cos(rot)*backwards_speed*et,  y - np.sin(rot)*backwards_speed*et
     
@@ -96,9 +95,23 @@ def movement(posx, posy, rot, keys, et, max_speed, current_speed, accel, backwar
     elif not keys[pg.K_UP]:
         return posx, posy, rot, False, True
     return posx, posy, rot, True, True
+def drift(x, y, rot, keys, et, drift_speed, max_speed, current_speed):
     
+    side_x = math.sin(rot)
+    side_y = math.cos(rot)
+    drift_slide = current_speed * 0.3
 
-# @njit()
+    if keys[pg.K_LEFT]:
+        rot = rot - 0.001*et
+        x += side_x * drift_slide * et
+        y += side_y * drift_slide * et
+    if keys[pg.K_RIGHT]:
+
+        rot = rot + 0.001*et
+        x -= side_x * drift_slide * et
+        y -= side_y * drift_slide * et
+    return x, y, rot, current_speed
+
 def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, depth, scaling):
     # for i in range(hres):
     #     rot_i = rot + np.deg2rad(i/mod - 30)
@@ -124,6 +137,10 @@ def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, depth, sc
             frame[i][2*halfvres-len(depth):2*halfvres] = shade*floor[np.flip(xxs),np.flip(yys)]/255 # puts the information into the correct place in frame
             
     return frame
+def color(posx, posy):
+    im = Image.open('MarioKart2.png') # Can be many different formats. imported from PIL
+    pix = im.load() # loads the image. the image is 1024 by 1024, while posx and posy go up to 30, which means it needs converting
+    return pix[round(1023 * (posx % 30)/30), round(1023 * (posy % 30)/30)] # returns color of position as a single int. uses 1023 to avoid out of bounds error
 
 if __name__ == '__main__':
     main()
