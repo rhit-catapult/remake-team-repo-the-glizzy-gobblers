@@ -3,6 +3,7 @@ import numpy as np
 from numba import njit
 import sys
 from PIL import Image
+import math
 
 
 def main():
@@ -29,7 +30,11 @@ def main():
     min_speed = 0
     current_speed = 0
     backwards_speed = 0
-    accel = 0.00005 
+    drift_speed = 0.0015
+    accel = 0.00005
+    rot = 0
+    drift_timer = 0
+
 
     while running:
         for event in pg.event.get():
@@ -64,25 +69,43 @@ def main():
                 if(backwards_speed < accel and
                    backwards_speed > accel * -1):
                     backwards_speed = 0
-        posx, posy, rot, moving_forward, moving_backwards = movement(posx, posy, rot, pg.key.get_pressed(), clock.tick(), max_speed, current_speed, accel, backwards_speed)
+        posx, posy, rot, moving_forward, moving_backwards = movement(posx, posy, rot, pg.key.get_pressed(), clock.tick(), max_speed, current_speed, accel, backwards_speed, drift_timer, drift_speed)
         
-
-
-def movement(posx, posy, rot, keys, et, max_speed, current_speed, accel, backwards_speed):
+def movement(posx, posy, rot, keys, et, max_speed, current_speed, accel, backwards_speed, drift_timer, drift_speed):
     
     x, y = (posx, posy)
-    
-    if keys[pg.K_LEFT]:
+    drifting_left = keys[pg.K_SPACE] and keys[pg.K_LEFT] and current_speed > 0.1 * max_speed
+    drifting_right = keys[pg.K_SPACE] and keys[pg.K_RIGHT] and current_speed > 0.1 * max_speed
+
+  
+    side_x = -math.sin(rot)
+    side_y = math.cos(rot)
+    drift_slide = current_speed * 0.4
+
+    if drifting_left:
+        rot = rot - drift_speed * et
+        x += side_x * drift_slide * et
+        y += side_y * drift_slide * et
+        
+
+    elif drifting_right:
+        rot = rot + drift_speed * et
+        x -= side_x * drift_slide * et
+        y -= side_y * drift_slide * et
+
+    elif keys[pg.K_LEFT]:
         rot = rot - 0.001*et
     
-    if keys[pg.K_RIGHT]:
+    elif keys[pg.K_RIGHT]:
         rot = rot + 0.001*et
 
-    
+    if keys[pg.K_UP]:
+        current_speed += accel * et
+    current_speed *= 0.98
+
+    posx, posy = (x, y)
+
     x, y = x + np.cos(rot)*current_speed*et,  y + np.sin(rot)*current_speed*et
-    
-        
-    
     x, y = x - np.cos(rot)*backwards_speed*et,  y - np.sin(rot)*backwards_speed*et
     
     posx, posy = (x, y)
