@@ -24,7 +24,7 @@ def main():
     
     max_speed = 0.008
     min_speed = 0
-    current_speed = 0
+    current_speed = 0.002
     backwards_speed = 0
     accel = 0.00005
 
@@ -81,12 +81,7 @@ def movement(posx, posy, rot, keys, et, max_speed, current_speed, accel, backwar
 
 
     posx, posy = (x, y)
-    if not keys[pg.K_UP] and not keys[pg.K_DOWN]:
-        return posx, posy, rot, False, False
-    elif not keys[pg.K_DOWN]:
-        return posx, posy, rot, True, False
-    elif not keys[pg.K_UP]:
-        return posx, posy, rot, False, True
+    
     return posx, posy, rot, True, True
     
 

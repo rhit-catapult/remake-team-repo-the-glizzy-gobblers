@@ -9,8 +9,8 @@ def main():
     clock = pg.time.Clock()
     clock.tick(60)
 
-    hres = 1000 #horizontal resolution
-    halfvres = 600 #vertical resolution/2
+    hres = 180 #horizontal resolution
+    halfvres = 150 #vertical resolution/2
 
     scaling = 60
     mod = hres/scaling #scaling factor (60° fov)
@@ -123,8 +123,6 @@ def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, depth):
             xxs, yys = (xs/30%1*1023).astype('int'), (ys/30%1*1023).astype('int') #position of the pixel/30 mod 1 time 1023 rounded 
             frame[i][2*halfvres-len(depth):2*halfvres] = shade*floor[np.flip(xxs),np.flip(yys)]/255 # puts the information into the correct place in frame
             
-            
-
     return frame
 
 if __name__ == '__main__':
