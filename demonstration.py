@@ -2,6 +2,7 @@ import pygame as pg
 import numpy as np
 import sys
 from PIL import Image
+import math
 
 def main():
     pg.init()
@@ -11,9 +12,8 @@ def main():
 
     hres = 180 #horizontal resolution
     halfvres = 150 #vertical resolution/2
-
     scaling = 60
-    mod = hres/scaling #scaling factor (60° fov)
+    mod = hres/scaling #scaling factor (fov set to 60)
     posx, posy, rot = 26.926, 17.938, 1.5 * np.pi #starting position and rotation angle
     moving_forward = False
     moving_backwards = False
@@ -29,7 +29,8 @@ def main():
     current_speed = 0
     backwards_speed = 0
     accel = 0.000033
-
+    drift_speed = 0.0015
+    
     while running: # game loop begins
         for event in pg.event.get(): # detect exiting loop: escape works to close
             if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
@@ -66,19 +67,15 @@ def main():
                     backwards_speed = 0
         
         # calculating movement below
-        posx, posy, rot, moving_forward, moving_backwards = movement(posx, posy, rot, pg.key.get_pressed(), clock.tick(), max_speed, current_speed, backwards_speed)
+        posx, posy, rot, moving_forward, moving_backwards = movement(posx, posy, rot, pg.key.get_pressed(), clock.tick(), drift_speed, max_speed, current_speed, backwards_speed)
 
-def movement(posx, posy, rot, keys, et, max_speed, current_speed, backwards_speed):
+def movement(posx, posy, rot, keys, et, drift_speed, max_speed, current_speed, backwards_speed):
     
     x, y = (posx, posy) # for organizational purposes
     
-    if keys[pg.K_LEFT]: # turn left
-        rot = rot - 0.001*et
-    
-    if keys[pg.K_RIGHT]: #turn right
-        rot = rot + 0.001*et
+    x,y, rot, current_speed, = drift(x, y, rot, keys, et, drift_speed, max_speed, current_speed)
 
-    if color(posx, posy) not in (2, 23, 25, 29): #if the car is not on track it should be slower
+    if color(posx, posy) not in (2, 22, 23, 25, 29): #if the car is not on track it should be slower
             current_speed *= 1/3
             backwards_speed *= 2/3
       
@@ -97,7 +94,33 @@ def movement(posx, posy, rot, keys, et, max_speed, current_speed, backwards_spee
     elif not keys[pg.K_UP]:
         return posx, posy, rot, False, True
     return posx, posy, rot, True, True
+def drift(x, y, rot, keys, et, drift_speed, max_speed, current_speed):
     
+    drifting_left = keys[pg.K_LEFT] and current_speed > 0.7 * max_speed
+    drifting_right = keys[pg.K_RIGHT] and current_speed > 0.7 * max_speed
+    side_x = -math.sin(rot)
+    side_y = math.cos(rot)
+    drift_slide = current_speed * 2
+
+    if drifting_left:
+        rot = rot - drift_speed * et
+        x += side_x * drift_slide * et
+        y += side_y * drift_slide * et
+        
+
+    elif drifting_right:
+        rot = rot + drift_speed * et
+        x -= side_x * drift_slide * et
+        y -= side_y * drift_slide * et
+
+    elif keys[pg.K_LEFT]:
+        rot = rot - 0.001*et
+    
+    elif keys[pg.K_RIGHT]:
+        rot = rot + 0.001*et
+
+    return x, y, rot, current_speed
+
 def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, depth, scaling):
     
     for i in range(hres):
