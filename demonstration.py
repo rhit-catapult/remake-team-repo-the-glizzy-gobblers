@@ -99,7 +99,7 @@ def movement(posx, posy, rot, keys, et, max_speed, current_speed, accel, backwar
     
 
 # @njit()
-def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, depth):
+def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, depth, scaling):
     # for i in range(hres):
     #     rot_i = rot + np.deg2rad(i/mod - 30)
     #     sin, cos, cos2 = np.sin(rot_i), np.cos(rot_i), np.cos(np.deg2rad(i/mod - 30))
