@@ -26,14 +26,14 @@ def main():
     sky = pg.surfarray.array3d(pg.transform.scale(sky, (360, halfvres*2)))/255
     ns = halfvres/((halfvres+0.1-np.linspace(0, halfvres, halfvres)))# depth
     
-    max_speed = 0.008
+    max_speed = 0.01
     min_speed = 0
     current_speed = 0
     backwards_speed = 0
     drift_speed = 0.0015
     accel = 0.00005
     rot = 0
-    drift_timer = 0
+
 
 
     while running:
@@ -69,39 +69,40 @@ def main():
                 if(backwards_speed < accel and
                    backwards_speed > accel * -1):
                     backwards_speed = 0
-        posx, posy, rot, moving_forward, moving_backwards = movement(posx, posy, rot, pg.key.get_pressed(), clock.tick(), max_speed, current_speed, accel, backwards_speed, drift_timer, drift_speed)
-        
-def movement(posx, posy, rot, keys, et, max_speed, current_speed, accel, backwards_speed, drift_timer, drift_speed):
-    
-    x, y = (posx, posy)
-    drifting_left = keys[pg.K_SPACE] and keys[pg.K_LEFT] and current_speed > 0.1 * max_speed
-    drifting_right = keys[pg.K_SPACE] and keys[pg.K_RIGHT] and current_speed > 0.1 * max_speed
+        posx, posy, rot, moving_forward, moving_backwards = movement(posx, posy, rot, pg.key.get_pressed(), clock.tick(), accel, max_speed, current_speed, backwards_speed, drift_speed)
 
-  
+
+def drifting(posx, posy, rot, keys, et, max_speed, accel, current_speed, backwards_speed, drift_speed):    
+    x, y = (posx, posy)
     side_x = -math.sin(rot)
     side_y = math.cos(rot)
-    drift_slide = current_speed * 0.4
+    drift_slide = current_speed * 0.1
 
-    if drifting_left:
-        rot = rot - drift_speed * et
-        x += side_x * drift_slide * et
-        y += side_y * drift_slide * et
+    
+    if current_speed > 0.5 * max_speed:
+        accel -= 0.000025
+
+    if current_speed > 0.7 * max_speed:
+        drift_slide = current_speed * 0.25
+        drift_speed += 0.0001
+        accel -= 0.000035
+    if current_speed > 0.9 * max_speed:
+        drift_slide = current_speed * 0.4
+        drift_speed += 0.00015
+        accel -= 0.000045
+
         
+def movement(posx, posy, rot, keys, et, max_speed, accel, current_speed, backwards_speed, drift_speed):    
+    x, y = (posx, posy)
+    
 
-    elif drifting_right:
-        rot = rot + drift_speed * et
-        x -= side_x * drift_slide * et
-        y -= side_y * drift_slide * et
 
-    elif keys[pg.K_LEFT]:
+    if keys[pg.K_LEFT]:
         rot = rot - 0.001*et
     
-    elif keys[pg.K_RIGHT]:
+    if keys[pg.K_RIGHT]:
         rot = rot + 0.001*et
 
-    if keys[pg.K_UP]:
-        current_speed += accel * et
-    current_speed *= 0.98
 
     posx, posy = (x, y)
 
