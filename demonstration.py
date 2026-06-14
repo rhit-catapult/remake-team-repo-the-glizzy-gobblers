@@ -10,8 +10,8 @@ def main():
     running = True # while loop variable
     clock = pg.time.Clock()
 
-    hres = 360 #horizontal resolution
-    halfvres = 300 #vertical resolution/2
+    hres = 300 #horizontal resolution
+    halfvres = 512 #vertical resolution/2
     scaling = 60
     mod = hres/scaling #scaling factor (fov set to 60)
     posx, posy, rot = 26.926, 17.938, 1.5 * np.pi #starting position and rotation angle
@@ -20,7 +20,7 @@ def main():
     frame = np.random.uniform(0,1, (hres, halfvres*2, 3)) # 2d array that stores the image
     kart = pg.surfarray.array3d(pg.image.load('MarioKart2.png')) # import map
     sky = pg.image.load('skybox.jpg')
-    sky = pg.surfarray.array3d(pg.transform.scale(sky, (360, halfvres*2)))/255
+    sky = pg.surfarray.array3d(pg.transform.scale(sky, (360, halfvres*2)))
     ns = halfvres/((halfvres+0.1-np.linspace(0, halfvres, halfvres)))# depth used in calculating warp 
     lap_time = time.time()
     # speed variables below
