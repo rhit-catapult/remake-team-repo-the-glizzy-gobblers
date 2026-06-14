@@ -3,15 +3,15 @@ import numpy as np
 import sys
 from PIL import Image
 import math
-
+import time 
 def main():
     pg.init()
     screen = pg.display.set_mode((1200,900)) # size
     running = True # while loop variable
     clock = pg.time.Clock()
 
-    hres = 180 #horizontal resolution
-    halfvres = 150 #vertical resolution/2
+    hres = 360 #horizontal resolution
+    halfvres = 300 #vertical resolution/2
     scaling = 60
     mod = hres/scaling #scaling factor (fov set to 60)
     posx, posy, rot = 26.926, 17.938, 1.5 * np.pi #starting position and rotation angle
@@ -22,37 +22,56 @@ def main():
     sky = pg.image.load('skybox.jpg')
     sky = pg.surfarray.array3d(pg.transform.scale(sky, (360, halfvres*2)))/255
     ns = halfvres/((halfvres+0.1-np.linspace(0, halfvres, halfvres)))# depth used in calculating warp 
-    
+    lap_time = time.time()
     # speed variables below
-    max_speed = 0.006
-    min_speed = 0
+    max_speed = 0.004
     current_speed = 0
     backwards_speed = 0
     accel = 0.000033
     drift_speed = 0.0015
-    
+    rot_speed = 0.0002
+    max_rot_speed = 0.001
+    turning = [False, False]
     while running: # game loop begins
         for event in pg.event.get(): # detect exiting loop: escape works to close
             if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
                 running = False
     
-        
         frame = new_frame(posx, posy, rot, frame, sky, kart, hres, halfvres, mod, ns, scaling) # creates the frame (2d array representing colors)
         surf = pg.surfarray.make_surface(frame*255) # assigns color to a screen object based on a 2d array representing pixels
         surf = pg.transform.scale(surf, (1200, 900)) # scales it to the size of the screen
         fps = int(clock.get_fps())
 
-        pg.display.set_caption("Pycasting maze - FPS: " + str(fps) + " Forwards: " + str(current_speed) + " Backwards: " + str(backwards_speed) + " Position: " + str(posx) + ", " + str(posy)) # debug info
+        pg.display.set_caption("Pycasting maze - FPS: " + str(fps) + " Rotation speed: " + str(rot_speed) + " Lap Time: " + str(time.time() - lap_time)) # debug info
         
         screen.blit(surf, (0,0)) # draws the screen
-        
+
+        # display speed
+        font = pg.font.SysFont("Arial", 30)
+        speed = font.render(str(round((current_speed - backwards_speed) * 10000, 4)) + " MPH", True, "White")
+        screen.blit(speed, (40,40))
+
+        # display time between laps
+        lap = font.render("Lap time: " + str(round(time.time() - lap_time, 2)), True, "White")
+        screen.blit(lap, (800,40))
+    
+
         pg.display.update()
         
         # calculations on what speed should be sent to the movement method below
+        print(turning)
+        if turning != [False, False]:
+            if max_speed <= 0.003:
+                max_speed = 0.003
+            else:
+                max_speed -= accel/2
+        else:
+            max_speed = 0.004
         if current_speed < max_speed and moving_forward:
             current_speed += accel
+            
         if not moving_forward:
-            if current_speed > min_speed: 
+            if current_speed > 0: 
                 current_speed -= accel * 2/3
                 if(current_speed < accel * 3 and
                    current_speed > accel * -3):
@@ -60,27 +79,44 @@ def main():
         if backwards_speed < max_speed/3 and moving_backwards:
             backwards_speed += accel/2
         if not moving_backwards:
-            if backwards_speed > min_speed: 
+            if backwards_speed > 0: 
                 backwards_speed -= accel
-                if(backwards_speed < accel and
-                   backwards_speed > accel * -1):
+                if(backwards_speed < 0.001 and
+                   backwards_speed > -0.001):
                     backwards_speed = 0
+        if rot_speed <= max_rot_speed and turning != [False, False] and turning != [True, True]:
+            rot_speed += 0.00002
+        else:
+            if rot_speed > 0.0002: 
+                rot_speed -= 0.0001
+                if(rot_speed < 0.000025 and
+                   rot_speed > 0):
+                    rot_speed = 0.0002
         
+        if current_speed > max_speed:
+            current_speed = max_speed
+        if backwards_speed > max_speed/3:
+            backwards_speed = max_speed/3
         # calculating movement below
-        posx, posy, rot, moving_forward, moving_backwards = movement(posx, posy, rot, pg.key.get_pressed(), clock.tick(), drift_speed, max_speed, current_speed, backwards_speed)
-
-def movement(posx, posy, rot, keys, et, drift_speed, max_speed, current_speed, backwards_speed):
+        posx, posy, rot, moving_forward, moving_backwards, turning = movement(posx, posy, rot, pg.key.get_pressed(), clock.tick(), drift_speed, max_speed, current_speed, backwards_speed, rot_speed, max_rot_speed)
+        # did we touch the finish line?
+        lap_time = (finish(color(posx, posy), lap_time))
+        
+def movement(posx, posy, rot, keys, et, drift_speed, max_speed, current_speed, backwards_speed, rot_speed, max_rot_speed):
     
     x, y = (posx, posy) # for organizational purposes
     
     if color(posx, posy) not in (22, 23, 25, 29, 30): #if the car is not on track it should be slower
         current_speed *= 1/3
         backwards_speed *= 1/3
-    x,y, rot, current_speed, = drift(x, y, rot, keys, et, drift_speed, max_speed, current_speed)
 
-    print(color(posx,posy))
-   
-      
+    # variables to make drift cleaner, same formula as speed
+    
+    # catch for higher speeds
+    if rot_speed > max_rot_speed:
+        rot_speed = max_rot_speed
+    x, y, rot, current_speed, turning = drift(x, y, rot, keys, et, current_speed, rot_speed)
+
     x, y = x + np.cos(rot)*current_speed*et,  y + np.sin(rot)*current_speed*et # changes position based on speed forwards
     
     x, y = x - np.cos(rot)*backwards_speed*et,  y - np.sin(rot)*backwards_speed*et # changes position based on speed backwards
@@ -90,28 +126,34 @@ def movement(posx, posy, rot, keys, et, drift_speed, max_speed, current_speed, b
     # sends booleans determining if keys are held down
     # decides if the car should accelerate or not
     if not keys[pg.K_UP] and not keys[pg.K_DOWN]: 
-        return posx, posy, rot, False, False
+        return posx, posy, rot, False, False, turning
     elif not keys[pg.K_DOWN]:
-        return posx, posy, rot, True, False
+        return posx, posy, rot, True, False, turning
     elif not keys[pg.K_UP]:
-        return posx, posy, rot, False, True
-    return posx, posy, rot, True, True
-def drift(x, y, rot, keys, et, drift_speed, max_speed, current_speed):
+        return posx, posy, rot, False, True, turning
+    return posx, posy, rot, True, True, turning
+def drift(x, y, rot, keys, et, current_speed, rot_speed):
     
-    side_x = math.sin(rot)
-    side_y = math.cos(rot)
-    drift_slide = current_speed * 0.3
-
+    side_x = math.cos(rot)
+    side_y = math.sin(rot)
+    drift_slide = current_speed * 0.5
+    turning = []
     if keys[pg.K_LEFT]:
-        rot = rot - 0.001*et
-        x += side_x * drift_slide * et
-        y += side_y * drift_slide * et
+        rot = rot - rot_speed*et
+        x += side_x * drift_slide * 1000 * rot_speed * et
+        y += side_y * drift_slide * 1000 * rot_speed * et
+        turning.append(True)
+    else:
+        turning.append(False)
     if keys[pg.K_RIGHT]:
+        rot = rot + rot_speed*et
+        x -= side_x * drift_slide * 1000 * rot_speed * et
+        y -= side_y * drift_slide * 1000 * rot_speed * et
+        turning.append(True)
+    else:
+        turning.append(False)
 
-        rot = rot + 0.001*et
-        x -= side_x * drift_slide * et
-        y -= side_y * drift_slide * et
-    return x, y, rot, current_speed
+    return x, y, rot, current_speed, turning
 
 def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, depth, scaling):
     
@@ -130,7 +172,19 @@ def color(posx, posy):
     im = Image.open('MarioKart2.png') # Can be many different formats. imported from PIL
     pix = im.load() # loads the image. the image is 1024 by 1024, while posx and posy go up to 30, which means it needs converting
     return pix[round(1023 * (posx % 30)/30), round(1023 * (posy % 30)/30)] # returns color of position as a single int. uses 1023 to avoid out of bounds error
+def finish(color_int, lap_time):
+    if color_int == 30:
+        if (lap_time < 2):
+            print(time.time() - lap_time)
 
+        return time.time()
+    return lap_time
+# extra method if more complexity is needed
+# def game_text(screen, size, text, x, y):
+#     font = pg.font.SysFont("Arial", size)
+#     caption = font.render(text, True, (0,0,0))
+#     screen.blit(caption, (x,y))
+#     return screen
 if __name__ == '__main__':
     main()
     pg.quit()
