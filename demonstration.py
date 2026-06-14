@@ -4,6 +4,8 @@ import sys
 from PIL import Image
 import math
 import time 
+
+
 def main():
     pg.init()
     screen = pg.display.set_mode((1200,900)) # size
@@ -23,15 +25,20 @@ def main():
     sky = pg.surfarray.array3d(pg.transform.scale(sky, (360, halfvres*2)))
     ns = halfvres/((halfvres+0.1-np.linspace(0, halfvres, halfvres)))# depth used in calculating warp 
     lap_time = time.time()
+    times_list = ['----','----','----']
+
     # speed variables below
-    max_speed = 0.004
+    max_speed = 0.006
+    turn_speed = max_speed * 0.75
     current_speed = 0
     backwards_speed = 0
     accel = 0.000033
     drift_speed = 0.0015
-    rot_speed = 0.0002
-    max_rot_speed = 0.001
+    rot_speed = [0, 0] # stores left speed at index 0 and right speed at index 1
+    max_rot_speed = 0.0012
+    offroad_speed = max_speed/3
     turning = [False, False]
+
     while running: # game loop begins
         for event in pg.event.get(): # detect exiting loop: escape works to close
             if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
@@ -47,74 +54,94 @@ def main():
         screen.blit(surf, (0,0)) # draws the screen
 
         # display speed
-        font = pg.font.SysFont("Arial", 30)
-        speed = font.render(str(round((current_speed - backwards_speed) * 10000, 4)) + " MPH", True, "White")
-        screen.blit(speed, (40,40))
+        
 
         # display time between laps
-        lap = font.render("Lap time: " + str(round(time.time() - lap_time, 2)), True, "White")
-        screen.blit(lap, (800,40))
+        write(screen, 30 ,str(round((current_speed - backwards_speed) * 10000, 4)) + " MPH", 850, 700, 'White')
+        write(screen, 30, "Lap time: " + str(round(time.time() - lap_time, 2)), 40, 40, 'White')
+        write(screen, 30, 'Top Times:', 850, 40, 'White')
+        write(screen, 30, times_list[0], 850, 80, 'White')
+        write(screen, 30, times_list[1], 850, 120, 'White')
+        write(screen, 30, times_list[2], 850, 160, 'White')
+        
+            
+
     
 
         pg.display.update()
         
-        # calculations on what speed should be sent to the movement method below
-        print(turning)
-        if turning != [False, False]:
-            if max_speed <= 0.003:
-                max_speed = 0.003
+        # calculations on what speeds should be sent to the movement method below
+
+        if turning != [False, False]: # detects if turning to reduce speed while turning
+            if max_speed <= turn_speed:
+                max_speed = turn_speed
             else:
                 max_speed -= accel/2
+
         else:
-            max_speed = 0.004
-        if current_speed < max_speed and moving_forward:
+            max_speed = 0.006
+        if current_speed < max_speed and moving_forward: # forward speed increase
             current_speed += accel
             
-        if not moving_forward:
+        if color(posx, posy) not in (22, 23, 25, 29, 30): #if the car is not on track it should be slower
+            max_speed = offroad_speed
+        
+
+        if not moving_forward: # decceleration if nothing is held
             if current_speed > 0: 
                 current_speed -= accel * 2/3
                 if(current_speed < accel * 3 and
                    current_speed > accel * -3):
                     current_speed = 0
-        if backwards_speed < max_speed/3 and moving_backwards:
+
+        if backwards_speed < max_speed/3 and moving_backwards: # backwards speed increase
             backwards_speed += accel/2
-        if not moving_backwards:
+        if not moving_backwards: # decceleration if nothing is held
             if backwards_speed > 0: 
                 backwards_speed -= accel
                 if(backwards_speed < 0.001 and
                    backwards_speed > -0.001):
                     backwards_speed = 0
-        if rot_speed <= max_rot_speed and turning != [False, False] and turning != [True, True]:
-            rot_speed += 0.00002
+
+        if rot_speed[0] <= max_rot_speed and turning == [True, False]: # increment rotation speed assuming left key for cleaner fee
+            rot_speed[0] += 0.00002
         else:
-            if rot_speed > 0.0002: 
-                rot_speed -= 0.0001
-                if(rot_speed < 0.000025 and
-                   rot_speed > 0):
-                    rot_speed = 0.0002
-        
+            if rot_speed[0] > 0: 
+                rot_speed[0] -= 0.00008
+                if(rot_speed[0] < 0.000025 and
+                   rot_speed[0] > -1):
+                    rot_speed[0] = 0
+        if rot_speed[1] <= max_rot_speed and turning == [False, True]: # increment rotation speed assuming right key for cleaner fee
+            rot_speed[1] += 0.00002
+        else: 
+            if rot_speed[1] > 0: 
+                rot_speed[1] -= 0.00008
+                if(rot_speed[1] < 0.000025 and
+                   rot_speed[1] > -1):
+                    rot_speed[1] = 0
+
+        # catch all to make sure max variables are absolute
         if current_speed > max_speed:
             current_speed = max_speed
         if backwards_speed > max_speed/3:
             backwards_speed = max_speed/3
+
         # calculating movement below
         posx, posy, rot, moving_forward, moving_backwards, turning = movement(posx, posy, rot, pg.key.get_pressed(), clock.tick(), drift_speed, max_speed, current_speed, backwards_speed, rot_speed, max_rot_speed)
+
         # did we touch the finish line?
-        lap_time = (finish(color(posx, posy), lap_time))
+        lap_time, times_list = (finish(color(posx, posy), lap_time, times_list))
         
 def movement(posx, posy, rot, keys, et, drift_speed, max_speed, current_speed, backwards_speed, rot_speed, max_rot_speed):
     
     x, y = (posx, posy) # for organizational purposes
     
-    if color(posx, posy) not in (22, 23, 25, 29, 30): #if the car is not on track it should be slower
-        current_speed *= 1/3
-        backwards_speed *= 1/3
-
-    # variables to make drift cleaner, same formula as speed
-    
     # catch for higher speeds
-    if rot_speed > max_rot_speed:
-        rot_speed = max_rot_speed
+    if rot_speed[0] > max_rot_speed:
+        rot_speed[0] = max_rot_speed
+    if rot_speed[1] > max_rot_speed:
+        rot_speed[1] = max_rot_speed
+
     x, y, rot, current_speed, turning = drift(x, y, rot, keys, et, current_speed, rot_speed)
 
     x, y = x + np.cos(rot)*current_speed*et,  y + np.sin(rot)*current_speed*et # changes position based on speed forwards
@@ -136,22 +163,25 @@ def drift(x, y, rot, keys, et, current_speed, rot_speed):
     
     side_x = math.cos(rot)
     side_y = math.sin(rot)
-    drift_slide = current_speed * 0.5
+    drift_slide = current_speed * 0.3
     turning = []
+
     if keys[pg.K_LEFT]:
-        rot = rot - rot_speed*et
-        x += side_x * drift_slide * 1000 * rot_speed * et
-        y += side_y * drift_slide * 1000 * rot_speed * et
+        x += side_x * drift_slide * 1000 * rot_speed[0] * et
+        y += side_y * drift_slide * 1000 * rot_speed[0] * et
         turning.append(True)
     else:
         turning.append(False)
+
     if keys[pg.K_RIGHT]:
-        rot = rot + rot_speed*et
-        x -= side_x * drift_slide * 1000 * rot_speed * et
-        y -= side_y * drift_slide * 1000 * rot_speed * et
+        x -= side_x * drift_slide * 1000 * rot_speed[1] * et
+        y -= side_y * drift_slide * 1000 * rot_speed[1] * et
         turning.append(True)
     else:
         turning.append(False)
+
+    rot = rot + rot_speed[1]*et
+    rot = rot - rot_speed[0]*et
 
     return x, y, rot, current_speed, turning
 
@@ -168,23 +198,38 @@ def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, depth, sc
             frame[i][2*halfvres-len(depth):2*halfvres] = shade*floor[np.flip(xxs),np.flip(yys)]/255 # puts the information into the correct place in frame
             
     return frame
+
 def color(posx, posy):
-    im = Image.open('MarioKart2.png') # Can be many different formats. imported from PIL
+
+    im = Image.open('MarioKart.png') # Can be many different formats. imported from PIL
     pix = im.load() # loads the image. the image is 1024 by 1024, while posx and posy go up to 30, which means it needs converting
     return pix[round(1023 * (posx % 30)/30), round(1023 * (posy % 30)/30)] # returns color of position as a single int. uses 1023 to avoid out of bounds error
-def finish(color_int, lap_time):
-    if color_int == 30:
-        if (lap_time < 2):
-            print(time.time() - lap_time)
 
-        return time.time()
-    return lap_time
-# extra method if more complexity is needed
-# def game_text(screen, size, text, x, y):
-#     font = pg.font.SysFont("Arial", size)
-#     caption = font.render(text, True, (0,0,0))
-#     screen.blit(caption, (x,y))
-#     return screen
+def finish(color_int, lap_time, times_list):
+
+    if color_int in (30, 25): # color of the finish, can be changed
+        if (lap_time < 10): # just make sure it's not too short
+            i = 0
+            for x in times_list: # add to an array
+                if time.time() - lap_time <= x:
+                    times_list.insert(i, str(time.time() - lap_time))
+                    break
+                elif times_list.index(x) == len(times_list) - 1:
+                    times_list.append(str(time.time() - lap_time))
+                else:
+                    i += 1
+
+
+        return time.time(), times_list # returns current time before the epoch
+    return lap_time, times_list # returns starting time in time before the epoch
+
+def write(screen, size, text, x, y, color):
+
+    font = pg.font.Font("8bit.ttf", 20)
+    caption = font.render(text, True, color)
+    screen.blit(caption, (x,y))
+    return screen
+
 if __name__ == '__main__':
     main()
     pg.quit()
