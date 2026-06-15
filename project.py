@@ -4,9 +4,7 @@ import sys
 from PIL import Image
 import math
 import time 
-import scores
 
-lists = scores(['----', '----', '----'], ['N/A', 'N/A', 'N/A'])
 
 def main():
     player_name, exit = menu()
@@ -51,6 +49,8 @@ def main():
             if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
                 running = False
 
+        keys = pg.key.get_pressed()
+
         frame = new_frame(posx, posy, rot, frame, sky, kart, hres, halfvres, mod, ns, scaling) # creates the frame (2d array representing colors)
         surf = pg.surfarray.make_surface(frame*255) # assigns color to a screen object based on a 2d array representing pixels
         surf = pg.transform.scale(surf, (1200, 900)) # scales it to the size of the screen
@@ -59,11 +59,27 @@ def main():
         pg.display.set_caption("Pycasting maze - FPS: " + str(fps)) # debug info
         
         screen.blit(surf, (0,0)) # draws the screen
+       
+        car_wheels = pg.transform.scale(car_wheels, (1000, 300))
+
+        new_wheels = car_wheels
+        
+
+        if keys[pg.K_LEFT]:
+            new_wheels = pg.transform.rotate(car_wheels, 5)
+        if keys[pg.K_RIGHT]:
+            new_wheels = pg.transform.rotate(car_wheels, -5)
+        
+        rotated_wheels = new_wheels.get_rect(center=car_wheels.get_rect(center=(600, 750)).center)
+            
+       
+        screen.blit(new_wheels, rotated_wheels)
 
         car_x = (1200 - car.get_width()) // 2
-        car_y = 800 - car.get_height()
+        car_y = 860 - car.get_height()
         screen.blit(car, (car_x, car_y))
 
+        
         # display all necessary screen info
         write(screen, 20 ,str(round((current_speed - backwards_speed) * 10000, 4)) + " MPH", 850, 700, 'White')
         write(screen, 20, "Lap time: " + str(round(time.time() - lap_time, 2)), 40, 40, 'White')
