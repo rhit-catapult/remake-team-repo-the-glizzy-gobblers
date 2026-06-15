@@ -4,9 +4,12 @@ import sys
 from PIL import Image
 import math
 import time 
-import menu 
+
 
 def main():
+    player_name, exit = menu()
+    if exit:
+        pg.quit()
     pg.init()
     screen = pg.display.set_mode((1200,900)) # size
     running = True # while loop variable
@@ -26,7 +29,7 @@ def main():
     ns = halfvres/((halfvres+0.1-np.linspace(0, halfvres, halfvres)))# depth used in calculating warp 
     lap_time = time.time()
     times_list = ['----','----','----']
-
+    player_list = ['N/A','N/A','N/A']
     # speed variables below
     max_speed = 0.006
     turn_speed = max_speed * 0.75
@@ -43,7 +46,7 @@ def main():
         for event in pg.event.get(): # detect exiting loop: escape works to close
             if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
                 running = False
-    
+        
         frame = new_frame(posx, posy, rot, frame, sky, kart, hres, halfvres, mod, ns, scaling) # creates the frame (2d array representing colors)
         surf = pg.surfarray.make_surface(frame*255) # assigns color to a screen object based on a 2d array representing pixels
         surf = pg.transform.scale(surf, (1200, 900)) # scales it to the size of the screen
@@ -57,9 +60,10 @@ def main():
         write(screen, 20 ,str(round((current_speed - backwards_speed) * 10000, 4)) + " MPH", 850, 700, 'White')
         write(screen, 20, "Lap time: " + str(round(time.time() - lap_time, 2)), 40, 40, 'White')
         write(screen, 20, 'Top Times:', 850, 40, 'White')
-        write(screen, 20, str(times_list[0]), 850, 80, 'White')
-        write(screen, 20, str(times_list[1]), 850, 120, 'White')
-        write(screen, 20, str(times_list[2]), 850, 160, 'White')
+        
+        for i in range(0,3):
+            write(screen, 20, str(times_list[i]) + " - " + str(player_list[i]), 850, 80 + i * 40, 'White')
+        
         
         
         pg.display.update()
@@ -126,8 +130,9 @@ def main():
         # did we touch the finish line?
         if posx % 30 < 6 and posy % 30 > 15:
             valid_lap = True
-        lap_time, times_list, valid_lap = (finish(color(posx, posy), lap_time, times_list, valid_lap))
-        
+        lap_time, times_list, player_list, valid_lap = (finish(color(posx, posy), lap_time, times_list, player_list, player_name, valid_lap))
+    main()
+    
 def movement(posx, posy, rot, keys, et, drift_speed, max_speed, current_speed, backwards_speed, rot_speed, max_rot_speed):
     
     x, y = (posx, posy) # for organizational purposes
@@ -203,7 +208,7 @@ def color(posx, posy):
     pix = im.load() # loads the image. the image is 1024 by 1024, while posx and posy go up to 30, which means it needs converting
     return pix[round(1023 * (posx % 30)/30), round(1023 * (posy % 30)/30)] # returns color of position as a single int. uses 1023 to avoid out of bounds error
 
-def finish(color_int, lap_time, times_list, valid_lap):
+def finish(color_int, lap_time, times_list, player_list, player_name, valid_lap):
 
     if color_int in (30, 28): # color of the finish, can be changed
         if (time.time() - lap_time > 10): # just make sure it's not too short
@@ -211,14 +216,16 @@ def finish(color_int, lap_time, times_list, valid_lap):
             for x in times_list: # add to an array
                 if  (x == '----' or time.time() - lap_time <= x) and valid_lap:
                     times_list.insert(i, round(time.time() - lap_time, 2))
+                    player_list.insert(i, player_name)
                     break
                 elif times_list.index(x) == len(times_list) - 1:
                     times_list.append(round(time.time() - lap_time, 2))
+                    player_list.append(player_name)
                 else:
                     i += 1
 
-        return time.time(), times_list, False # returns current time before the epoch
-    return lap_time, times_list, valid_lap # returns starting time in time before the epoch
+        return time.time(), times_list, player_list, False # returns current time before the epoch
+    return lap_time, times_list, player_list, valid_lap # returns starting time in time before the epoch
 
 def write(screen, size, text, x, y, color):
 
@@ -228,15 +235,63 @@ def write(screen, size, text, x, y, color):
     return screen
 
 def menu():
-    pass
+    # mostly AI unfortunately
+    pg.init()
+    screen = pg.display.set_mode((1200, 900))
+    pg.display.set_caption("Cart Race!")
+    font = pg.font.Font('8bit.ttf', 30)
+
+    input_rect = pg.Rect(380, 500, 440, 45)
+    color_active = pg.Color("dodgerblue2")
+    color_inactive = pg.Color("lightskyblue3")
+    box_color = color_inactive
+
+    user_text = ""
+    active = False
+    running = True
+    exit = False
+
+    while running:
+        for event in pg.event.get():
+            if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
+                running = False
+                exit = True
+
+            if event.type == pg.MOUSEBUTTONDOWN:
+                if input_rect.collidepoint(event.pos):
+                    active = True
+                    box_color = color_active
+                else:
+                    active = False
+                    box_color = color_inactive
+
+            if active:
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_BACKSPACE:
+                        user_text = user_text[:-1]
+                    elif event.key == pg.K_RETURN:
+                        submitted_text = user_text
+                        user_text = ''
+                        return submitted_text, exit
+
+                elif event.type == pg.TEXTINPUT:
+                    user_text += event.text
     
+        screen.fill((30, 30, 30))
+
+        text_surface = font.render(user_text, True, (255, 255, 255))
+
+        input_rect.w = max(440, text_surface.get_width() + 10) 
+        screen.blit(text_surface, (input_rect.x + 5, input_rect.y + 7))
+
+        write(screen, 50, "Kart Race!", 375, 200, 'Red')
+        write(screen, 30, "Name:", 380, 460, 'White')
+        pg.draw.rect(screen, box_color, input_rect, 3)
+
+        pg.display.flip()
+    return submitted_text, exit
 
 
-
-
-
-
-menu()
 if __name__ == '__main__':
     main()
     pg.quit()
