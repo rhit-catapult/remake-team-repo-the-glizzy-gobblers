@@ -2,8 +2,8 @@ import pygame
 
 # 1. Initialize Pygame and Font Setup
 pygame.init()
-screen = pygame.display.set_mode((640, 480))
-pygame.display.set_caption("Pygame Text Input Example")
+screen = pygame.display.set_mode((1200, 900))
+pygame.display.set_caption("Kart Race")
 font = pygame.font.Font(None, 36)
 
 # 2. Text Box Configuration
@@ -53,7 +53,7 @@ while running:
     text_surface = font.render(user_text, True, (255, 255, 255))
     
     # Auto-resize the input box outline if text exceeds default size
-    input_rect.w = max(440, text_surface.get_width() + 10)
+    input_rect.w = max(440, text_surface.get_width() + 10) 
 
     # Draw the text and the surrounding boundary box
     screen.blit(text_surface, (input_rect.x + 5, input_rect.y + 7))

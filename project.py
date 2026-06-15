@@ -4,7 +4,7 @@ import sys
 from PIL import Image
 import math
 import time 
-
+import menu 
 
 def main():
     pg.init()
@@ -227,7 +227,16 @@ def write(screen, size, text, x, y, color):
     screen.blit(caption, (x,y))
     return screen
 
+def menu():
+    pass
+    
 
+
+
+
+
+
+menu()
 if __name__ == '__main__':
     main()
     pg.quit()
