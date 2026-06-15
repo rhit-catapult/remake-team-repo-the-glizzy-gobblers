@@ -16,15 +16,15 @@ def main():
         running = True # while loop variable
         clock = pg.time.Clock()
 
-        hres = 300 #horizontal resolution
-        halfvres = 512 #vertical resolution/2
+        hres = 100 #horizontal resolution
+        halfvres = 170 #vertical resolution/2
         scaling = 60
         mod = hres/scaling #scaling factor (fov set to 60)
         posx, posy, rot = 26.926, 17.938, 1.5 * np.pi #starting position and rotation angle
         moving_forward = False
         moving_backwards = False
         frame = np.random.uniform(0,1, (hres, halfvres*2, 3)) # 2d array that stores the image
-        kart = pg.surfarray.array3d(pg.image.load('MarioKart.png')) # import map
+        kart = pg.surfarray.array3d(pg.image.load('Monacoracetrack.png')) # import map
         car = pg.image.load("Carbody.png")
         car_wheels = pg.image.load("Carwheels.png")
         sky = pg.image.load('skybox.jpg')
@@ -228,7 +228,7 @@ def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, depth, sc
 def color(posx, posy):
 
     car_im = Image.open('Carbody.png')
-    im = Image.open('MarioKart.png') # Can be many different formats. imported from PIL
+    im = Image.open('Monacoracetrack.png') # Can be many different formats. imported from PIL
     car_load = car_im.load()
     pix = im.load() # loads the image. the image is 1024 by 1024, while posx and posy go up to 30, which means it needs converting
     return pix[round(1023 * (posx % 30)/30), round(1023 * (posy % 30)/30)] # returns color of position as a single int. uses 1023 to avoid out of bounds error
