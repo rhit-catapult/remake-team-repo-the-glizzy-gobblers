@@ -8,154 +8,153 @@ import time
 
 def main():
     player_name, exit = menu()
-    if exit:
-        pg.quit()
-    pg.init()
-    screen = pg.display.set_mode((1200,800)) # size
-    running = True # while loop variable
-    clock = pg.time.Clock()
-
-    hres = 300 #horizontal resolution
-    halfvres = 512 #vertical resolution/2
-    scaling = 60
-    mod = hres/scaling #scaling factor (fov set to 60)
-    posx, posy, rot = 26.926, 17.938, 1.5 * np.pi #starting position and rotation angle
-    moving_forward = False
-    moving_backwards = False
-    frame = np.random.uniform(0,1, (hres, halfvres*2, 3)) # 2d array that stores the image
-    kart = pg.surfarray.array3d(pg.image.load('MarioKart.png')) # import map
-    car = pg.image.load("Carbody.png")
-    car_wheels = pg.image.load("Carwheels.png")
-    sky = pg.image.load('skybox.jpg')
-    sky = pg.surfarray.array3d(pg.transform.scale(sky, (360, halfvres*2)))
-    ns = halfvres/((halfvres+0.1-np.linspace(0, halfvres, halfvres)))# depth used in calculating warp 
-    lap_time = time.time()
     times_list = ['----','----','----']
     player_list = ['N/A','N/A','N/A']
-    # speed variables below
-    max_speed = 0.006
-    turn_speed = max_speed * 0.75
-    current_speed = 0
-    backwards_speed = 0
-    accel = 0.00002
-    drift_speed = 0.0015
-    rot_speed = [0, 0] # stores left speed at index 0 and right speed at index 1
-    max_rot_speed = 0.0012
-    offroad_speed = max_speed/3
-    turning = [False, False]
-    valid_lap = False
-    while running: # game loop begins
-        for event in pg.event.get(): # detect exiting loop: escape works to close
-            if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
-                running = False
+    while(not exit):
+        pg.init()
+        screen = pg.display.set_mode((1200,800)) # size
+        running = True # while loop variable
+        clock = pg.time.Clock()
 
-        keys = pg.key.get_pressed()
+        hres = 300 #horizontal resolution
+        halfvres = 512 #vertical resolution/2
+        scaling = 60
+        mod = hres/scaling #scaling factor (fov set to 60)
+        posx, posy, rot = 26.926, 17.938, 1.5 * np.pi #starting position and rotation angle
+        moving_forward = False
+        moving_backwards = False
+        frame = np.random.uniform(0,1, (hres, halfvres*2, 3)) # 2d array that stores the image
+        kart = pg.surfarray.array3d(pg.image.load('MarioKart.png')) # import map
+        car = pg.image.load("Carbody.png")
+        car_wheels = pg.image.load("Carwheels.png")
+        sky = pg.image.load('skybox.jpg')
+        sky = pg.surfarray.array3d(pg.transform.scale(sky, (360, halfvres*2)))
+        ns = halfvres/((halfvres+0.1-np.linspace(0, halfvres, halfvres)))# depth used in calculating warp 
+        lap_time = time.time()
+        # speed variables below
+        max_speed = 0.006
+        turn_speed = max_speed * 0.75
+        current_speed = 0
+        backwards_speed = 0
+        accel = 0.00002
+        drift_speed = 0.0015
+        rot_speed = [0, 0] # stores left speed at index 0 and right speed at index 1
+        max_rot_speed = 0.0012
+        offroad_speed = max_speed/4
+        turning = [False, False]
+        valid_lap = False
+        while running: # game loop begins
+            for event in pg.event.get(): # detect exiting loop: escape works to close
+                if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
+                    running = False
 
-        frame = new_frame(posx, posy, rot, frame, sky, kart, hres, halfvres, mod, ns, scaling) # creates the frame (2d array representing colors)
-        surf = pg.surfarray.make_surface(frame*255) # assigns color to a screen object based on a 2d array representing pixels
-        surf = pg.transform.scale(surf, (1200, 900)) # scales it to the size of the screen
-        fps = int(clock.get_fps())
+            keys = pg.key.get_pressed()
 
-        pg.display.set_caption("Pycasting maze - FPS: " + str(fps)) # debug info
-        
-        screen.blit(surf, (0,0)) # draws the screen
-       
-        car_wheels = pg.transform.scale(car_wheels, (1000, 300))
+            frame = new_frame(posx, posy, rot, frame, sky, kart, hres, halfvres, mod, ns, scaling) # creates the frame (2d array representing colors)
+            surf = pg.surfarray.make_surface(frame*255) # assigns color to a screen object based on a 2d array representing pixels
+            surf = pg.transform.scale(surf, (1200, 900)) # scales it to the size of the screen
+            fps = int(clock.get_fps())
 
-        new_wheels = car_wheels
-        
-
-        if keys[pg.K_LEFT]:
-            new_wheels = pg.transform.rotate(car_wheels, 5)
-        if keys[pg.K_RIGHT]:
-            new_wheels = pg.transform.rotate(car_wheels, -5)
-        
-        rotated_wheels = new_wheels.get_rect(center=car_wheels.get_rect(center=(600, 750)).center)
+            pg.display.set_caption("Pycasting maze - FPS: " + str(fps)) # debug info
             
-       
-        screen.blit(new_wheels, rotated_wheels)
+            screen.blit(surf, (0,0)) # draws the screen
+        
+            car_wheels = pg.transform.scale(car_wheels, (1000, 300))
 
-        car_x = (1200 - car.get_width()) // 2
-        car_y = 860 - car.get_height()
-        screen.blit(car, (car_x, car_y))
+            new_wheels = car_wheels
+            
 
+            if keys[pg.K_LEFT]:
+                new_wheels = pg.transform.rotate(car_wheels, 5)
+            if keys[pg.K_RIGHT]:
+                new_wheels = pg.transform.rotate(car_wheels, -5)
+            
+            rotated_wheels = new_wheels.get_rect(center=car_wheels.get_rect(center=(600, 750)).center)
+                
         
-        # display all necessary screen info
-        write(screen, 20 ,str(round((current_speed - backwards_speed) * 10000, 4)) + " MPH", 850, 700, 'White')
-        write(screen, 20, "Lap time: " + str(round(time.time() - lap_time, 2)), 40, 40, 'White')
-        write(screen, 20, 'Top Times:', 850, 40, 'White')
-        
-        for i in range(0,3):
-            write(screen, 20, str(times_list[i]) + " - " + str(player_list[i]), 850, 80 + i * 40, 'White')
-        
-        
-        
-        pg.display.update()
-        
-        # calculations on what speeds should be sent to the movement method below
+            screen.blit(new_wheels, rotated_wheels)
 
-        if turning != [False, False]: # detects if turning to reduce speed while turning
-            if max_speed <= turn_speed:
-                max_speed = turn_speed
+            car_x = (1200 - car.get_width()) // 2
+            car_y = 860 - car.get_height()
+            screen.blit(car, (car_x, car_y))
+
+            
+            # display all necessary screen info
+            write(screen, 20 ,str(round((current_speed - backwards_speed) * 10000, 4)) + " MPH", 850, 700, 'White')
+            write(screen, 20, "Lap time: " + str(round(time.time() - lap_time, 2)), 40, 40, 'White')
+            write(screen, 20, 'Top Times:', 850, 40, 'White')
+            
+            for i in range(0,3):
+                write(screen, 20, str(times_list[i]) + " - " + str(player_list[i]), 850, 80 + i * 40, 'White')
+            
+            
+            
+            pg.display.update()
+            
+            # calculations on what speeds should be sent to the movement method below
+
+            if turning != [False, False]: # detects if turning to reduce speed while turning
+                if max_speed <= turn_speed:
+                    max_speed = turn_speed
+                else:
+                    max_speed -= accel/2
+
             else:
-                max_speed -= accel/2
+                max_speed = 0.006
+            if current_speed < max_speed and moving_forward: # forward speed increase
+                current_speed += accel
+            
+            if color(posx, posy) not in (22, 23, 29): #if the car is not on track it should be slower
+                max_speed = offroad_speed
+            
 
-        else:
-            max_speed = 0.006
-        if current_speed < max_speed and moving_forward: # forward speed increase
-            current_speed += accel
-        
-        if color(posx, posy) not in (22, 23, 28, 29, 30): #if the car is not on track it should be slower
-            max_speed = offroad_speed
-        
+            if not moving_forward: # decceleration if nothing is held
+                if current_speed > 0: 
+                    current_speed -= accel * 2/3
+                    if(current_speed < accel * 3 and
+                    current_speed > accel * -3):
+                        current_speed = 0
 
-        if not moving_forward: # decceleration if nothing is held
-            if current_speed > 0: 
-                current_speed -= accel * 2/3
-                if(current_speed < accel * 3 and
-                   current_speed > accel * -3):
-                    current_speed = 0
+            if backwards_speed < max_speed/3 and moving_backwards: # backwards speed increase
+                backwards_speed += accel/2
+            if not moving_backwards: # decceleration if nothing is held
+                if backwards_speed > 0: 
+                    backwards_speed -= accel
+                    if(backwards_speed < 0.001 and
+                    backwards_speed > -0.001):
+                        backwards_speed = 0
 
-        if backwards_speed < max_speed/3 and moving_backwards: # backwards speed increase
-            backwards_speed += accel/2
-        if not moving_backwards: # decceleration if nothing is held
-            if backwards_speed > 0: 
-                backwards_speed -= accel
-                if(backwards_speed < 0.001 and
-                   backwards_speed > -0.001):
-                    backwards_speed = 0
+            if rot_speed[0] <= max_rot_speed and turning == [True, False]: # increment rotation speed assuming left key for cleaner fee
+                rot_speed[0] += 0.00002
+            else:
+                if rot_speed[0] > 0: 
+                    rot_speed[0] -= 0.00008
+                    if(rot_speed[0] < 0.000025 and
+                    rot_speed[0] > -1):
+                        rot_speed[0] = 0
+            if rot_speed[1] <= max_rot_speed and turning == [False, True]: # increment rotation speed assuming right key for cleaner fee
+                rot_speed[1] += 0.00002
+            else: 
+                if rot_speed[1] > 0: 
+                    rot_speed[1] -= 0.00008
+                    if(rot_speed[1] < 0.000025 and
+                    rot_speed[1] > -1):
+                        rot_speed[1] = 0
 
-        if rot_speed[0] <= max_rot_speed and turning == [True, False]: # increment rotation speed assuming left key for cleaner fee
-            rot_speed[0] += 0.00002
-        else:
-            if rot_speed[0] > 0: 
-                rot_speed[0] -= 0.00008
-                if(rot_speed[0] < 0.000025 and
-                   rot_speed[0] > -1):
-                    rot_speed[0] = 0
-        if rot_speed[1] <= max_rot_speed and turning == [False, True]: # increment rotation speed assuming right key for cleaner fee
-            rot_speed[1] += 0.00002
-        else: 
-            if rot_speed[1] > 0: 
-                rot_speed[1] -= 0.00008
-                if(rot_speed[1] < 0.000025 and
-                   rot_speed[1] > -1):
-                    rot_speed[1] = 0
+            # catch all to make sure max variables are absolute
+            if current_speed > max_speed:
+                current_speed = max_speed
+            if backwards_speed > max_speed/3:
+                backwards_speed = max_speed/3
 
-        # catch all to make sure max variables are absolute
-        if current_speed > max_speed:
-            current_speed = max_speed
-        if backwards_speed > max_speed/3:
-            backwards_speed = max_speed/3
+            # calculating movement below
+            posx, posy, rot, moving_forward, moving_backwards, turning = movement(posx, posy, rot, pg.key.get_pressed(), clock.tick(), drift_speed, max_speed, current_speed, backwards_speed, rot_speed, max_rot_speed)
 
-        # calculating movement below
-        posx, posy, rot, moving_forward, moving_backwards, turning = movement(posx, posy, rot, pg.key.get_pressed(), clock.tick(), drift_speed, max_speed, current_speed, backwards_speed, rot_speed, max_rot_speed)
-
-        # did we touch the finish line?
-        if posx % 30 < 6 and posy % 30 > 15:
-            valid_lap = True
-        lap_time, times_list, player_list, valid_lap = (finish(color(posx, posy), lap_time, times_list, player_list, player_name, valid_lap))
-    main()
+            # did we touch the finish line?
+            if posx % 30 < 6 and posy % 30 > 15:
+                valid_lap = True
+            lap_time, times_list, player_list, valid_lap = (finish(color(posx, posy), lap_time, times_list, player_list, player_name, valid_lap))
+        player_name, exit = menu()
     
 def movement(posx, posy, rot, keys, et, drift_speed, max_speed, current_speed, backwards_speed, rot_speed, max_rot_speed):
     
