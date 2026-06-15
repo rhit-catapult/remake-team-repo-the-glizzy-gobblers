@@ -2,10 +2,11 @@ import pygame as pg
 import numpy as np
 import sys
 import math
+from PIL import Image 
 
 def main():
     pg.init()
-    screen = pg.display.set_mode((1200,900)) # size
+    screen = pg.display.set_mode((800,600)) # size
     running = True # while loop variable
     clock = pg.time.Clock()
     clock.tick(60)
@@ -23,25 +24,47 @@ def main():
     sky = pg.surfarray.array3d(pg.transform.scale(sky, (360, halfvres*2)))/255
     ns = halfvres/((halfvres+0.1-np.linspace(0, halfvres, halfvres)))# depth used in calculating warp 
     
-    max_speed = 0.004
+    base_max_speed = 0.006
+    base_accel = 0.00005
+    base_drift_speed = 0.0015
     min_speed = 0
     current_speed = 0
     backwards_speed = 0
-    accel = 0.00005
-    drift_speed = 0.0015
+    drift_time = 0
+    drift_boosted = False
+    DRIFT_BOOST_MS = 3000
     
     while running: # game loop begins
+        dt = clock.tick(60)
         for event in pg.event.get(): # detect exiting loop: escape works to close
             if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
                 running = False
-    
-        
+
+        keys = pg.key.get_pressed()
+        drifting = keys[pg.K_LEFT] or keys[pg.K_RIGHT]
+        if drifting and (moving_forward or current_speed > 0):
+            drift_time += dt
+        else:
+            drift_time = 0
+            drift_boosted = False
+        if drift_time >= DRIFT_BOOST_MS:
+            drift_boosted = True
+
+        if drift_boosted:
+            max_speed = base_max_speed * 1.3
+            accel = base_accel * 1.5
+            drift_speed = base_drift_speed * 1.5
+        else:
+            max_speed = base_max_speed
+            accel = base_accel
+            drift_speed = base_drift_speed
+
         frame = new_frame(posx, posy, rot, frame, sky, kart, hres, halfvres, mod, ns, scaling) # creates the frame (2d array representing colors)
         surf = pg.surfarray.make_surface(frame*255) # assigns color to a screen object based on a 2d array representing pixels
-        surf = pg.transform.scale(surf, (1200, 900)) # scales it to the size of the screen
+        surf = pg.transform.scale(surf, (800, 600)) # scales it to the size of the screen
         fps = int(clock.get_fps())
         
-        pg.display.set_caption("Pycasting maze - FPS: " + str(fps) + " Forwards: " + str(current_speed) + " Backwards: " + str(backwards_speed))
+        pg.display.set_caption("Pycasting maze - FPS: " + str(fps) + " Speed: " + str(current_speed * 10000 - backwards_speed * 10000))
         
         screen.blit(surf, (0,0)) # draws the screen
         
@@ -57,7 +80,7 @@ def main():
                    current_speed > accel * -3):
                     current_speed = 0
         if backwards_speed < max_speed/3 and moving_backwards:
-            backwards_speed += accel/2
+            backwards_speed += accel
         if not moving_backwards:
             if backwards_speed > min_speed: 
                 backwards_speed -= accel
@@ -66,16 +89,15 @@ def main():
                     backwards_speed = 0
         
         # calculating movement below
-        posx, posy, rot, moving_forward, moving_backwards = movement(posx, posy, rot, pg.key.get_pressed(), clock.tick(), drift_speed, max_speed, current_speed, backwards_speed)
+        posx, posy, rot, moving_forward, moving_backwards = movement(posx, posy, rot, keys, dt, drift_speed, max_speed, current_speed, backwards_speed)
 
 def movement(posx, posy, rot, keys, et, drift_speed, max_speed, current_speed, backwards_speed):
-    
     x, y = (posx, posy)
     
     if color(posx, posy) not in (22, 23, 25, 29, 30): #if the car is not on track it should be slower
         current_speed *= 1/3
         backwards_speed *= 1/3
-    x,y, rot, current_speed, = drift(x, y, rot, keys, et, drift_speed, max_speed, current_speed)
+    x, y, rot, current_speed = drift(x, y, rot, keys, et, drift_speed, max_speed, current_speed)
 
     print(color(posx,posy))
    
@@ -95,18 +117,26 @@ def movement(posx, posy, rot, keys, et, drift_speed, max_speed, current_speed, b
     elif not keys[pg.K_UP]:
         return posx, posy, rot, False, True
     return posx, posy, rot, True, True
+
 def drift(x, y, rot, keys, et, drift_speed, max_speed, current_speed):
-    
+
     side_x = math.sin(rot)
     side_y = math.cos(rot)
-    drift_slide = current_speed * 0.3
+    drift_multiplier = 0.1
+    if current_speed > 0.5 * max_speed:
+        drift_multiplier = 0.12
+    if current_speed > 0.7 * max_speed:
+        drift_multiplier = 0.15
+    if current_speed > 0.9 * max_speed:
+        drift_multiplier = 0.18
+
+    drift_slide = current_speed * drift_multiplier + drift_speed
 
     if keys[pg.K_LEFT]:
         rot = rot - 0.001*et
         x += side_x * drift_slide * et
         y += side_y * drift_slide * et
     if keys[pg.K_RIGHT]:
-
         rot = rot + 0.001*et
         x -= side_x * drift_slide * et
         y -= side_y * drift_slide * et
