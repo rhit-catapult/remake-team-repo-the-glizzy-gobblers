@@ -32,7 +32,7 @@ def main():
     turn_speed = max_speed * 0.75
     current_speed = 0
     backwards_speed = 0
-    accel = 0.000033
+    accel = 0.00002
     drift_speed = 0.0015
     rot_speed = [0, 0] # stores left speed at index 0 and right speed at index 1
     max_rot_speed = 0.0012
@@ -49,7 +49,7 @@ def main():
         surf = pg.transform.scale(surf, (1200, 900)) # scales it to the size of the screen
         fps = int(clock.get_fps())
 
-        pg.display.set_caption("Pycasting maze - FPS: " + str(fps) + " Valid: " +str(valid_lap) + " X position: " + str(posy)) # debug info
+        pg.display.set_caption("Pycasting maze - FPS: " + str(fps)) # debug info
         
         screen.blit(surf, (0,0)) # draws the screen
 
@@ -155,23 +155,25 @@ def movement(posx, posy, rot, keys, et, drift_speed, max_speed, current_speed, b
     elif not keys[pg.K_UP]:
         return posx, posy, rot, False, True, turning
     return posx, posy, rot, True, True, turning
+
 def drift(x, y, rot, keys, et, current_speed, rot_speed):
     
-    side_x = math.cos(rot)
-    side_y = math.sin(rot)
-    drift_slide = current_speed * 0.5
+    perp_x = math.sin(rot)
+    perp_y = -math.cos(rot)
+
+    drift_slide = current_speed * 0.35
     turning = []
 
     if keys[pg.K_LEFT]:
-        x += side_x * drift_slide * 1000 * rot_speed[0] * et
-        y += side_y * drift_slide * 1000 * rot_speed[0] * et
+        x -= perp_x * drift_slide * 1000 * rot_speed[0] * et
+        y -= perp_y * drift_slide * 1000 * rot_speed[0] * et
         turning.append(True)
     else:
         turning.append(False)
 
     if keys[pg.K_RIGHT]:
-        x -= side_x * drift_slide * 1000 * rot_speed[1] * et
-        y -= side_y * drift_slide * 1000 * rot_speed[1] * et
+        x += perp_x * drift_slide * 1000 * rot_speed[1] * et
+        y += perp_y * drift_slide * 1000 * rot_speed[1] * et
         turning.append(True)
     else:
         turning.append(False)
