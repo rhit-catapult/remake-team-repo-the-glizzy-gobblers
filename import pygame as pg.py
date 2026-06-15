@@ -22,7 +22,6 @@ def main():
     moving_backwards = False
     frame = np.random.uniform(0,1, (hres, halfvres*2, 3))
     kart = pg.surfarray.array3d(pg.image.load('MarioKart.png'))
-    car_forward = pg.image.load("Carmovingfoward.png")
     sky = pg.image.load('skybox.jpg')
     sky = pg.surfarray.array3d(pg.transform.scale(sky, (360, halfvres*2)))/255
     ns = halfvres/((halfvres+0.1-np.linspace(0, halfvres, halfvres)))# depth
