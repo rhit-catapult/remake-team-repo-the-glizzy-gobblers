@@ -4,7 +4,9 @@ import sys
 from PIL import Image
 import math
 import time 
+import scores
 
+lists = scores(['----', '----', '----'], ['N/A', 'N/A', 'N/A'])
 
 def main():
     player_name, exit = menu()
@@ -46,7 +48,7 @@ def main():
         for event in pg.event.get(): # detect exiting loop: escape works to close
             if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
                 running = False
-        
+
         frame = new_frame(posx, posy, rot, frame, sky, kart, hres, halfvres, mod, ns, scaling) # creates the frame (2d array representing colors)
         surf = pg.surfarray.make_surface(frame*255) # assigns color to a screen object based on a 2d array representing pixels
         surf = pg.transform.scale(surf, (1200, 900)) # scales it to the size of the screen
