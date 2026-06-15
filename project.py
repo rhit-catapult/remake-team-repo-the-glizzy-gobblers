@@ -8,7 +8,7 @@ import time
 
 def main():
     pg.init()
-    screen = pg.display.set_mode((1200,900)) # size
+    screen = pg.display.set_mode((1200,800)) # size
     running = True # while loop variable
     clock = pg.time.Clock()
 
@@ -21,6 +21,8 @@ def main():
     moving_backwards = False
     frame = np.random.uniform(0,1, (hres, halfvres*2, 3)) # 2d array that stores the image
     kart = pg.surfarray.array3d(pg.image.load('MarioKart.png')) # import map
+    car = pg.image.load("Carbody.png")
+    car_wheels = pg.image.load("Carwheels.png")
     sky = pg.image.load('skybox.jpg')
     sky = pg.surfarray.array3d(pg.transform.scale(sky, (360, halfvres*2)))
     ns = halfvres/((halfvres+0.1-np.linspace(0, halfvres, halfvres)))# depth used in calculating warp 
@@ -52,6 +54,10 @@ def main():
         pg.display.set_caption("Pycasting maze - FPS: " + str(fps)) # debug info
         
         screen.blit(surf, (0,0)) # draws the screen
+
+        car_x = (1200 - car.get_width()) // 2
+        car_y = 800 - car.get_height()
+        screen.blit(car, (car_x, car_y))
 
         # display all necessary screen info
         write(screen, 20 ,str(round((current_speed - backwards_speed) * 10000, 4)) + " MPH", 850, 700, 'White')
@@ -199,7 +205,9 @@ def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, depth, sc
 
 def color(posx, posy):
 
+    car_im = Image.open('Carbody.png')
     im = Image.open('MarioKart.png') # Can be many different formats. imported from PIL
+    car_load = car_im.load()
     pix = im.load() # loads the image. the image is 1024 by 1024, while posx and posy go up to 30, which means it needs converting
     return pix[round(1023 * (posx % 30)/30), round(1023 * (posy % 30)/30)] # returns color of position as a single int. uses 1023 to avoid out of bounds error
 
