@@ -4,27 +4,32 @@ import sys
 from PIL import Image
 import math
 import time 
-
+import map as m
 
 def main():
     player_name, exit = menu()
+
     times_list = ['----','----','----']
     player_list = ['N/A','N/A','N/A']
+
+    selected = m.map('MarioKart.png', times_list, player_list, [22, 23, 29], [28, 30], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[6,16])
+    #selected = m.map('Selfmade.png', times_list, player_list, [2], [3, 4], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[17,7])
+    # selected = m.map('Monacoracetrack.png', times_list, player_list, [19, 23, 29], [28, 30], 813, 715)
     while(not exit):
         pg.init()
         screen = pg.display.set_mode((1200,800)) # size
         running = True # while loop variable
         clock = pg.time.Clock()
 
-        hres = 100 #horizontal resolution
-        halfvres = 170 #vertical resolution/2
+        hres = 300 #horizontal resolution
+        halfvres = 512 #vertical resolution/2
         scaling = 60
         mod = hres/scaling #scaling factor (fov set to 60)
-        posx, posy, rot = 26.926, 17.938, 1.5 * np.pi #starting position and rotation angle
+        posx, posy, rot = selected.start_x, selected.start_y, selected.start_rot #starting position and rotation angle
         moving_forward = False
         moving_backwards = False
         frame = np.random.uniform(0,1, (hres, halfvres*2, 3)) # 2d array that stores the image
-        kart = pg.surfarray.array3d(pg.image.load('MarioKart.png')) # import map
+        kart = pg.surfarray.array3d(pg.image.load(selected.image)) # import map
         car = pg.image.load("Carbody.png")
         car_wheels = pg.image.load("Carwheels.png")
         sky = pg.image.load('skybox.jpg')
@@ -40,7 +45,7 @@ def main():
         drift_speed = 0.0015
         rot_speed = [0, 0] # stores left speed at index 0 and right speed at index 1
         max_rot_speed = 0.0012
-        offroad_speed = max_speed/4
+        offroad_speed = max_speed/3
         turning = [False, False]
         valid_lap = False
         while running: # game loop begins
@@ -50,12 +55,12 @@ def main():
 
             keys = pg.key.get_pressed()
 
-            frame = new_frame(posx, posy, rot, frame, sky, kart, hres, halfvres, mod, ns, scaling) # creates the frame (2d array representing colors)
+            frame = new_frame(posx, posy, rot, frame, sky, kart, hres, halfvres, mod, ns, scaling, selected) # creates the frame (2d array representing colors)
             surf = pg.surfarray.make_surface(frame*255) # assigns color to a screen object based on a 2d array representing pixels
             surf = pg.transform.scale(surf, (1200, 900)) # scales it to the size of the screen
             fps = int(clock.get_fps())
 
-            pg.display.set_caption("Pycasting maze - FPS: " + str(fps)) # debug info
+            pg.display.set_caption("Pycasting maze - FPS: " + str(fps) + " Position: " + str(posx) + " " + str(posy)) # debug info
             
             screen.blit(surf, (0,0)) # draws the screen
         
@@ -104,7 +109,8 @@ def main():
             if current_speed < max_speed and moving_forward: # forward speed increase
                 current_speed += accel
             
-            if color(posx, posy) not in (22, 23, 29): #if the car is not on track it should be slower
+            print(selected.color(posx, posy))
+            if selected.color(posx, posy) not in selected.track_colors: #if the car is not on track it should be slower
                 max_speed = offroad_speed
             
 
@@ -125,15 +131,15 @@ def main():
                         backwards_speed = 0
 
             if rot_speed[0] <= max_rot_speed and turning == [True, False]: # increment rotation speed assuming left key for cleaner fee
-                rot_speed[0] += 0.00002
+                rot_speed[0] += (0.00002 - current_speed/60000) # we can use calculations like these to make it harder while speeding up (change numbers)
             else:
                 if rot_speed[0] > 0: 
-                    rot_speed[0] -= 0.00008
+                    rot_speed[0] -= 0.00008 
                     if(rot_speed[0] < 0.000025 and
                     rot_speed[0] > -1):
                         rot_speed[0] = 0
             if rot_speed[1] <= max_rot_speed and turning == [False, True]: # increment rotation speed assuming right key for cleaner fee
-                rot_speed[1] += 0.00002
+                rot_speed[1] += (0.00002 - current_speed/60000)
             else: 
                 if rot_speed[1] > 0: 
                     rot_speed[1] -= 0.00008
@@ -142,6 +148,10 @@ def main():
                         rot_speed[1] = 0
 
             # catch all to make sure max variables are absolute
+            if current_speed == 0:
+                rot_speed[0] = 0
+                rot_speed[1] = 0
+
             if current_speed > max_speed:
                 current_speed = max_speed
             if backwards_speed > max_speed/3:
@@ -151,9 +161,9 @@ def main():
             posx, posy, rot, moving_forward, moving_backwards, turning = movement(posx, posy, rot, pg.key.get_pressed(), clock.tick(), drift_speed, max_speed, current_speed, backwards_speed, rot_speed, max_rot_speed)
 
             # did we touch the finish line?
-            if posx % 30 < 6 and posy % 30 > 15:
+            if posx % 30 < selected.valid_pos[0] and posy % 30 > selected.valid_pos[1]:
                 valid_lap = True
-            lap_time, times_list, player_list, valid_lap = (finish(color(posx, posy), lap_time, times_list, player_list, player_name, valid_lap))
+            lap_time, times_list, player_list, valid_lap = (finish(selected.color(posx, posy), selected.finish_colors, lap_time, times_list, player_list, player_name, valid_lap))
         player_name, exit = menu()
     
 def movement(posx, posy, rot, keys, et, drift_speed, max_speed, current_speed, backwards_speed, rot_speed, max_rot_speed):
@@ -211,7 +221,7 @@ def drift(x, y, rot, keys, et, current_speed, rot_speed):
 
     return x, y, rot, current_speed, turning
 
-def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, depth, scaling):
+def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, depth, scaling, map):
     
     for i in range(hres):
             shade = 0.4 + 0.6*(np.linspace(0, halfvres, halfvres)/halfvres) # half of the vertical resolution: creates an array of evenly spaced tuples
@@ -220,23 +230,15 @@ def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, depth, sc
             sin, cos, cos2 = np.sin(rot_i), np.cos(rot_i), np.cos(np.deg2rad(i/mod-scaling/2)) # creates warp based on trigonometry, pseudo 3d rendering
             frame[i][:halfvres] = sky[int(np.rad2deg(rot_i)%359)][:halfvres]/255 # the top half of the world should look like the sky
             xs, ys = posx+depth*cos/cos2, posy+depth*sin/cos2 # the position of the intended pixel 
-            xxs, yys = (xs/30%1*1023).astype('int'), (ys/30%1*1023).astype('int') #position of the pixel/30 mod 1 time 1023 rounded 
+            xxs, yys = (xs/30%1*map.x - 1).astype('int'), (ys/30%1*map.y - 1).astype('int') #position of the pixel/30 mod 1 time map - 1 rounded 
             frame[i][2*halfvres-len(depth):2*halfvres] = shade*floor[np.flip(xxs),np.flip(yys)]/255 # puts the information into the correct place in frame
             
     return frame
 
-def color(posx, posy):
+def finish(color_int, color_list, lap_time, times_list, player_list, player_name, valid_lap):
 
-    car_im = Image.open('Carbody.png')
-    im = Image.open('Mariokart.png') # Can be many different formats. imported from PIL
-    car_load = car_im.load()
-    pix = im.load() # loads the image. the image is 1024 by 1024, while posx and posy go up to 30, which means it needs converting
-    return pix[round(1023 * (posx % 30)/30), round(1023 * (posy % 30)/30)] # returns color of position as a single int. uses 1023 to avoid out of bounds error
-
-def finish(color_int, lap_time, times_list, player_list, player_name, valid_lap):
-
-    if color_int in (30, 28): # color of the finish, can be changed
-        if (time.time() - lap_time > 10): # just make sure it's not too short
+    if color_int in color_list: # color of the finish, can be changed
+        if (time.time() - lap_time > 2): # just make sure it's not too short
             i = 0
             for x in times_list: # add to an array
                 if  (x == '----' or time.time() - lap_time <= x) and valid_lap:
@@ -309,12 +311,12 @@ def menu():
         input_rect.w = max(440, text_surface.get_width() + 10) 
         screen.blit(text_surface, (input_rect.x + 5, input_rect.y + 7))
 
-        write(screen, 50, "Kart Race!", 375, 200, 'Red')
+        write(screen, 50, "Cart Race!", 375, 200, 'Red')
         write(screen, 30, "Name:", 380, 460, 'White')
         pg.draw.rect(screen, box_color, input_rect, 3)
 
         pg.display.flip()
-    return submitted_text, exit
+    return user_text, exit
 
 
 if __name__ == '__main__':
