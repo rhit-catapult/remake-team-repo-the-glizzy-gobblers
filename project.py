@@ -22,8 +22,10 @@ def main():
         screen = pg.display.set_mode((1200,800)) # size
         running = True # while loop variable
         clock = pg.time.Clock()
-        accel_sound = pg.mixer.Sound("Car_accel.wav")
-
+        accel_sound = pg.mixer.Sound("Car_accel.mp3")
+        brake_sound = pg.mixer.Sound("Car_brake.mp3")
+        car_sound = pg.mixer.Sound("Car_sound.mp3")
+    
         hres = 300 #horizontal resolution
         halfvres = 512 #vertical resolution/2
         scaling = 60
@@ -55,8 +57,6 @@ def main():
             for event in pg.event.get(): # detect exiting loop: escape works to close
                 if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
                     running = False
-                if event.type == pg.K_UP:
-                    accel_sound.play()
 
             keys = pg.key.get_pressed()
 
@@ -73,12 +73,30 @@ def main():
 
             new_wheels = car_wheels
 
-            
+            # if keys[pg.K_UP] and current_speed < 0.5 * max_speed:
+            #     accel_sound.play()
+            # else:
+            #     accel_sound.stop()
+            if current_speed > 0 and not keys[pg.K_DOWN]: 
+                car_sound.play()
+            else:
+                car_sound.stop()
+            if keys[pg.K_DOWN] and current_speed > 0:
+                brake_sound.play()
+            else:
+                brake_sound.stop()
 
+
+                
+            
             if keys[pg.K_LEFT]:
                 new_wheels = pg.transform.rotate(car_wheels, 5)
-            if keys[pg.K_RIGHT]:
+            elif keys[pg.K_RIGHT]:
                 new_wheels = pg.transform.rotate(car_wheels, -5)
+            elif keys[pg.K_LEFT] and current_speed > 0.5 * max_speed:
+                new_wheels = pg.transform.rotate(car_wheels, 3)
+            elif keys[pg.K_RIGHT] and current_speed > 0.5 * max_speed:
+                new_wheels = pg.transform.rotate(car_wheels, -3)
             
             rotated_wheels = new_wheels.get_rect(center=car_wheels.get_rect(center=(600, 750)).center)
                 
@@ -175,6 +193,7 @@ def main():
             if selected.image == 'Selfmade':
                 map2 = selected
         player_name, selected, exit = menu(False, map1, map2)
+
     
 def movement(posx, posy, rot, keys, et, drift_speed, max_speed, current_speed, backwards_speed, rot_speed, max_rot_speed):
     
