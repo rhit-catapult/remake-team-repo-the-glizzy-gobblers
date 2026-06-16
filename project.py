@@ -20,6 +20,7 @@ def main():
         screen = pg.display.set_mode((1200,800)) # size
         running = True # while loop variable
         clock = pg.time.Clock()
+        accel_sound = pg.mixer.Sound("Car_accel.wav")
 
         hres = 300 #horizontal resolution
         halfvres = 512 #vertical resolution/2
@@ -52,6 +53,8 @@ def main():
             for event in pg.event.get(): # detect exiting loop: escape works to close
                 if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
                     running = False
+                if event.type == pg.K_UP:
+                    accel_sound.play()
 
             keys = pg.key.get_pressed()
 
@@ -67,6 +70,7 @@ def main():
             car_wheels = pg.transform.scale(car_wheels, (1000, 300))
 
             new_wheels = car_wheels
+
             
 
             if keys[pg.K_LEFT]:
