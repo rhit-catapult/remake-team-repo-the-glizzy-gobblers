@@ -1,4 +1,4 @@
-import pygame
+import pygame as pg
 import sys
 from PIL import Image
 

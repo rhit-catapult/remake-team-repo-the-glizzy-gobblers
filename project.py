@@ -5,16 +5,18 @@ from PIL import Image
 import math
 import time 
 import map as m
+import load_map as lm
 
 def main():
-    player_name, exit = menu()
-
+    
     times_list = ['----','----','----']
     player_list = ['N/A','N/A','N/A']
+    map1 = m.map('MarioKart.png', times_list, player_list, [22, 23, 29], [28, 30], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[6,16])
+    map2 = m.map('Selfmade.png', times_list, player_list, [2], [3, 4], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[17,7])
+    player_name, selected, exit = menu(True, map1, map2)
+    while selected == None:
+        player_name, selected, exit = menu(True, map1, map2)
 
-    selected = m.map('MarioKart.png', times_list, player_list, [22, 23, 29], [28, 30], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[6,16])
-    #selected = m.map('Selfmade.png', times_list, player_list, [2], [3, 4], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[17,7])
-    # selected = m.map('Monacoracetrack.png', times_list, player_list, [19, 23, 29], [28, 30], 813, 715)
     while(not exit):
         pg.init()
         screen = pg.display.set_mode((1200,800)) # size
@@ -152,7 +154,7 @@ def main():
                         rot_speed[1] = 0
 
             # catch all to make sure max variables are absolute
-            if current_speed == 0:
+            if current_speed == 0 and backwards_speed == 0:
                 rot_speed[0] = 0
                 rot_speed[1] = 0
 
@@ -167,8 +169,12 @@ def main():
             # did we touch the finish line?
             if posx % 30 < selected.valid_pos[0] and posy % 30 > selected.valid_pos[1]:
                 valid_lap = True
-            lap_time, times_list, player_list, valid_lap = (finish(selected.color(posx, posy), selected.finish_colors, lap_time, times_list, player_list, player_name, valid_lap))
-        player_name, exit = menu()
+            lap_time, selected.times_list, selected.player_list, valid_lap = (finish(selected, selected.color(posx, posy), selected.finish_colors, lap_time, times_list, player_list, player_name, valid_lap))
+            if selected.image == 'MarioKart':
+                map1 = selected
+            if selected.image == 'Selfmade':
+                map2 = selected
+        player_name, selected, exit = menu(False, map1, map2)
     
 def movement(posx, posy, rot, keys, et, drift_speed, max_speed, current_speed, backwards_speed, rot_speed, max_rot_speed):
     
@@ -239,19 +245,23 @@ def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, depth, sc
             
     return frame
 
-def finish(color_int, color_list, lap_time, times_list, player_list, player_name, valid_lap):
+def finish(selected, color_int, color_list, lap_time, times_list, player_list, player_name, valid_lap):
 
     if color_int in color_list: # color of the finish, can be changed
         if (time.time() - lap_time > 2): # just make sure it's not too short
             i = 0
-            for x in times_list: # add to an array
+            for x in selected.times_list: # add to an array
+        
                 if  (x == '----' or time.time() - lap_time <= x) and valid_lap:
-                    times_list.insert(i, round(time.time() - lap_time, 2))
-                    player_list.insert(i, player_name)
+                    selected.times_list.insert(i, round(time.time() - lap_time, 2))
+                    if player_name == '':
+                        selected.player_list.insert(i, 'Anonymous')
+                    else:
+                        selected.player_list.insert(i, player_name)
                     break
-                elif times_list.index(x) == len(times_list) - 1:
-                    times_list.append(round(time.time() - lap_time, 2))
-                    player_list.append(player_name)
+                elif selected.times_list.index(x) == len(times_list) - 1:
+                    selected.times_list.append(round(time.time() - lap_time, 2))
+                    selected.player_list.append(player_name)
                 else:
                     i += 1
 
@@ -265,17 +275,20 @@ def write(screen, size, text, x, y, color):
     screen.blit(caption, (x,y))
     return screen
 
-def menu():
+def menu(first_time, map1, map2):
     # mostly AI unfortunately
     pg.init()
     screen = pg.display.set_mode((1200, 900))
     pg.display.set_caption("Cart Race!")
     font = pg.font.Font('8bit.ttf', 30)
 
-    input_rect = pg.Rect(380, 500, 440, 45)
+    input_rect = pg.Rect(380, 680, 440, 45)
     color_active = pg.Color("dodgerblue2")
     color_inactive = pg.Color("lightskyblue3")
     box_color = color_inactive
+
+    load_mario = lm.load_map(screen, 'MarioKart.png', 50, 300)
+    load_selfmade = lm.load_map(screen, 'Selfmade.png', 450, 300)
 
     user_text = ""
     active = False
@@ -293,9 +306,24 @@ def menu():
                     active = True
                     box_color = color_active
                 else:
-                    active = False
-                    box_color = color_inactive
-
+                    if load_selfmade.rect.collidepoint(event.pos):
+                        load_selfmade.active = True
+                        load_mario.active = False
+                    elif load_mario.rect.collidepoint(event.pos):
+                        load_mario.active = True
+                        load_selfmade.active = False
+                    else:
+                        load_mario.active = False
+                        load_selfmade.active = False
+                        active = False
+                        box_color = color_inactive
+            selected = None
+            if load_mario.active:
+                selected = map1
+                
+            if load_selfmade.active:
+                selected = map2
+        
             if active:
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_BACKSPACE:
@@ -303,24 +331,30 @@ def menu():
                     elif event.key == pg.K_RETURN:
                         submitted_text = user_text
                         user_text = ''
-                        return submitted_text, exit
+                        return submitted_text, selected, exit
 
                 elif event.type == pg.TEXTINPUT:
                     user_text += event.text
     
         screen.fill((30, 30, 30))
-
+        
         text_surface = font.render(user_text, True, (255, 255, 255))
 
         input_rect.w = max(440, text_surface.get_width() + 10) 
         screen.blit(text_surface, (input_rect.x + 5, input_rect.y + 7))
 
-        write(screen, 50, "Cart Race!", 375, 200, 'Red')
-        write(screen, 30, "Name:", 380, 460, 'White')
+        
+        # load_hard = lm.load_map(screen, 'Hard.png', 850, 300)
+        load_mario.draw()
+        load_selfmade.draw()
+
+        write(screen, 50, "Cart Race!", 375, 120, 'Red')
+        write(screen, 30, "Select a map: ", 50, 220, 'White')
+        write(screen, 30, "Name:", 380, 640, 'White')
         pg.draw.rect(screen, box_color, input_rect, 3)
 
         pg.display.flip()
-    return user_text, exit
+    return user_text, selected, exit
 
 
 if __name__ == '__main__':
