@@ -11,7 +11,7 @@ def main():
 
     map1 = m.map('MarioKart.png', ['----','----','----'], ['N/A','N/A','N/A'], [22, 23, 29], [28, 30], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[6,16])
     map2 = m.map('Selfmade.png', ['----','----','----'], ['N/A','N/A','N/A'], [2], [3, 4], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[17,7])
-    map3 = m.map('circle.png', ['----','----','----'], ['N/A','N/A','N/A'], [3], [0, 4], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[17,7])
+    map3 = m.map('circle.png', ['----','----','----'], ['N/A','N/A','N/A'], [3], [0, 4], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[5,10])
     player_name, selected, exit = menu (map1, map2, map3)
     while selected == None:
         player_name, selected, exit = menu(map1, map2, map3)
@@ -145,9 +145,11 @@ def main():
             
             print(selected.color(posx, posy))
             if selected.color(posx, posy) not in selected.track_colors: #if the car is not on track it should be slower
-                max_speed = offroad_speed
-            
-
+                if current_speed > offroad_speed:
+                    current_speed -= accel * 4
+                else:
+                   pass
+        
             if not moving_forward: # decceleration if nothing is held
                 if current_speed > 0: 
                     current_speed -= accel * 2/3

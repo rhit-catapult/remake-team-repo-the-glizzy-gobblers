@@ -22,6 +22,6 @@ class load_map:
         if self.active:
             pg.draw.rect(self.screen, 'Yellow', (self.x - 3, self.y - 3, self.width + 6, self.length + 6), 3)
         self.screen.blit(draw_map, (self.x,self.y))
-
+    
         
             
