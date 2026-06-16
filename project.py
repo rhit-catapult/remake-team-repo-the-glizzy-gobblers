@@ -11,7 +11,7 @@ def main():
 
     map1 = m.map('MarioKart.png', ['----','----','----'], ['N/A','N/A','N/A'], [22, 23, 29], [28, 30], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[6,16])
     map2 = m.map('Selfmade.png', ['----','----','----'], ['N/A','N/A','N/A'], [2], [3, 4], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[17,7])
-    map3 = m.map('circle.png', ['----','----','----'], ['N/A','N/A','N/A'], [3], [0, 4], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[17,7])
+    map3 = m.map('circle.png', ['----','----','----'], ['N/A','N/A','N/A'], [2], [3, 4], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[5,10])
     player_name, selected, exit = menu (map1, map2, map3)
     while selected == None:
         player_name, selected, exit = menu(map1, map2, map3)
@@ -62,7 +62,22 @@ def main():
         
         turning = [False, False]
         valid_lap = False
+        check = time.time()
+        while time.time() - check < 3:
+            toprint = 3 - (time.time() - check)
+            write(screen, 200, str(round(toprint) + 1), 500, 300, 'Black')
+            write(screen, 200, str(round(toprint)), 500, 300, 'White')
+            pg.display.update()
+            
+        lap_time = time.time()
+
         while running: # game loop begins
+            
+            
+            
+
+            # write()
+            
             for event in pg.event.get(): # detect exiting loop: escape works to close
                 if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
                     running = False
@@ -96,10 +111,6 @@ def main():
                 brake_sound.play()
             else:
                 brake_sound.stop()
-          
-
-
-                
             
             if keys[pg.K_LEFT]:
                 new_wheels = pg.transform.rotate(car_wheels, 5)
@@ -122,8 +133,9 @@ def main():
             
             # display all necessary screen info
             write(screen, 20 ,str(round((current_speed - backwards_speed) * 10000, 4)) + " MPH", 850, 700, 'White')
+            write(screen, 20, "Lap " + str(selected.laps_run + 1) + "/3", 40,80, 'White')
             write(screen, 20, "Lap time: " + str(round(time.time() - lap_time, 2)), 40, 40, 'White')
-            write(screen, 20, 'Top Times:', 850, 40, 'White')
+            write(screen, 20, 'Fastest Laps:', 850, 40, 'White')
             
             for i in range(0,3):
                 write(screen, 20, str(selected.times_list[i]) + " - " + str(selected.player_list[i]), 850, 80 + i * 40, 'White')
@@ -144,12 +156,13 @@ def main():
                 max_speed = static_max
             if current_speed < max_speed and moving_forward: # forward speed increase
                 current_speed += accel
-            
-            print(selected.color(posx, posy))
+            print(selected.color(posx,posy))
             if selected.color(posx, posy) not in selected.track_colors: #if the car is not on track it should be slower
-                max_speed = offroad_speed
-            
-
+                if current_speed > offroad_speed:
+                    current_speed -= accel * 4
+                else:
+                   pass
+        
             if not moving_forward: # decceleration if nothing is held
                 if current_speed > 0: 
                     current_speed -= accel * 2/3
@@ -199,7 +212,7 @@ def main():
             # did we touch the finish line?
             if posx % 30 < selected.valid_pos[0] and posy % 30 > selected.valid_pos[1]:
                 valid_lap = True
-            lap_time, selected.times_list, selected.player_list, valid_lap = (finish(selected, selected.color(posx, posy), selected.finish_colors, lap_time, player_name, valid_lap))
+            lap_time, selected.times_list, selected.player_list, selected.laps_run, valid_lap = (finish(selected, selected.color(posx, posy), selected.finish_colors, lap_time, player_name, valid_lap))
             
         player_name, selected, exit = menu(map1, map2, map3)
     
@@ -281,6 +294,7 @@ def finish(selected, color_int, color_list, lap_time, player_name, valid_lap):
         
                 if  (x == '----' or time.time() - lap_time <= x) and valid_lap:
                     selected.times_list.insert(i, round(time.time() - lap_time, 2))
+                    selected.laps_run += 1  
                     if player_name == '':
                         selected.player_list.insert(i, 'Anonymous')
                     else:
@@ -289,11 +303,13 @@ def finish(selected, color_int, color_list, lap_time, player_name, valid_lap):
                 elif selected.times_list.index(x) == len(selected.times_list) - 1:
                     selected.times_list.append(round(time.time() - lap_time, 2))
                     selected.player_list.append(player_name)
+                    selected.laps_run += 1  
                 else:
                     i += 1
-
-        return time.time(), selected.times_list, selected.player_list, False # returns current time before the epoch
-    return lap_time, selected.times_list, selected.player_list, valid_lap # returns starting time in time before the epoch
+              
+            
+        return time.time(), selected.times_list, selected.player_list, selected.laps_run, False # returns current time before the epoch
+    return lap_time, selected.times_list, selected.player_list, selected.laps_run, valid_lap # returns starting time in time before the epoch
 
 def write(screen, size, text, x, y, color):
 
@@ -317,6 +333,9 @@ def menu(map1, map2, map3):
     load_mario = lm.load_map(screen, 'MarioKart.png', 50, 300)
     load_selfmade = lm.load_map(screen, 'Selfmade.png', 450, 300)
     load_circle = lm.load_map(screen, 'circle.png', 850, 300)
+    map1.laps_run = 0
+    map2.laps_run = 0
+    map3.laps_run = 0
 
     user_text = ""
     active = False
@@ -380,7 +399,7 @@ def menu(map1, map2, map3):
         
         text_surface = font.render(user_text, True, (255, 255, 255))
 
-        input_rect.w = max(440, text_surface.get_width() + 10) 
+        input_rect.w = max(440, text_surface.get_width() + 10)
         screen.blit(text_surface, (input_rect.x + 5, input_rect.y + 7))
 
         

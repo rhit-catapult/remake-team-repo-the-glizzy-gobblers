@@ -16,6 +16,7 @@ class map:
         self.start_y = start_y
         self.start_rot = start_rot
         self.valid_pos = valid_pos
+        self.laps_run = 0
 
     def color(self, posx, posy):
         im = Image.open(self.image) # Can be many different formats. imported from PIL
