@@ -9,14 +9,16 @@ import load_map as lm
 
 def main():
     
-    times_list = ['----','----','----']
-    player_list = ['N/A','N/A','N/A']
-    map1 = m.map('MarioKart.png', times_list, player_list, [22, 23, 29], [28, 30], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[6,16])
-    map2 = m.map('Selfmade.png', times_list, player_list, [2], [3, 4], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[17,7])
-    player_name, selected, exit = menu(True, map1, map2)
-    while selected == None:
-        player_name, selected, exit = menu(True, map1, map2)
-
+    times_list1 = ['----','----','----']
+    player_list1 = ['N/A','N/A','N/A']
+    times_list2 = ['----','----','----']
+    player_list2 = ['N/A','N/A','N/A']
+    map1 = m.map('MarioKart.png', times_list1, player_list1, [22, 23, 29], [28, 30], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[6,16])
+    map2 = m.map('Selfmade.png', times_list2, player_list2, [2], [3, 4], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[17,7])
+    player_name, selected, exit = menu (map1, map2)
+    while selected == None and not exit:
+        player_name, selected, exit = menu(map1, map2)
+   
     while(not exit):
         pg.init()
         screen = pg.display.set_mode((1200,800)) # size
@@ -62,7 +64,7 @@ def main():
             surf = pg.transform.scale(surf, (1200, 900)) # scales it to the size of the screen
             fps = int(clock.get_fps())
 
-            pg.display.set_caption("Pycasting maze - FPS: " + str(fps) + " Position: " + str(posx) + " " + str(posy)) # debug info
+            pg.display.set_caption("Pycasting maze - FPS: " + str(fps)) # debug info
             
             screen.blit(surf, (0,0)) # draws the screen
         
@@ -92,7 +94,7 @@ def main():
             write(screen, 20, 'Top Times:', 850, 40, 'White')
             
             for i in range(0,3):
-                write(screen, 20, str(times_list[i]) + " - " + str(player_list[i]), 850, 80 + i * 40, 'White')
+                write(screen, 20, str(selected.times_list[i]) + " - " + str(selected.player_list[i]), 850, 80 + i * 40, 'White')
             
             
             
@@ -111,7 +113,7 @@ def main():
             if current_speed < max_speed and moving_forward: # forward speed increase
                 current_speed += accel
             
-            print(selected.color(posx, posy))
+            # print(selected.color(posx, posy))
             if selected.color(posx, posy) not in selected.track_colors: #if the car is not on track it should be slower
                 max_speed = offroad_speed
             
@@ -165,12 +167,12 @@ def main():
             # did we touch the finish line?
             if posx % 30 < selected.valid_pos[0] and posy % 30 > selected.valid_pos[1]:
                 valid_lap = True
-            lap_time, selected.times_list, selected.player_list, valid_lap = (finish(selected, selected.color(posx, posy), selected.finish_colors, lap_time, times_list, player_list, player_name, valid_lap))
-            if selected.image == 'MarioKart':
-                map1 = selected
-            if selected.image == 'Selfmade':
-                map2 = selected
-        player_name, selected, exit = menu(False, map1, map2)
+            lap_time, selected.times_list, selected.player_list, valid_lap = (finish(selected, selected.color(posx, posy), selected.finish_colors, lap_time, player_name, valid_lap))
+            
+            
+        player_name, selected, exit = menu(map1, map2)
+        print(map1.times_list)
+        print(map2.times_list)
     
 def movement(posx, posy, rot, keys, et, drift_speed, max_speed, current_speed, backwards_speed, rot_speed, max_rot_speed):
     
@@ -241,7 +243,7 @@ def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, depth, sc
             
     return frame
 
-def finish(selected, color_int, color_list, lap_time, times_list, player_list, player_name, valid_lap):
+def finish(selected, color_int, color_list, lap_time, player_name, valid_lap):
 
     if color_int in color_list: # color of the finish, can be changed
         if (time.time() - lap_time > 2): # just make sure it's not too short
@@ -255,14 +257,14 @@ def finish(selected, color_int, color_list, lap_time, times_list, player_list, p
                     else:
                         selected.player_list.insert(i, player_name)
                     break
-                elif selected.times_list.index(x) == len(times_list) - 1:
+                elif selected.times_list.index(x) == len(selected.times_list) - 1:
                     selected.times_list.append(round(time.time() - lap_time, 2))
                     selected.player_list.append(player_name)
                 else:
                     i += 1
 
-        return time.time(), times_list, player_list, False # returns current time before the epoch
-    return lap_time, times_list, player_list, valid_lap # returns starting time in time before the epoch
+        return time.time(), selected.times_list, selected.player_list, False # returns current time before the epoch
+    return lap_time, selected.times_list, selected.player_list, valid_lap # returns starting time in time before the epoch
 
 def write(screen, size, text, x, y, color):
 
@@ -271,7 +273,7 @@ def write(screen, size, text, x, y, color):
     screen.blit(caption, (x,y))
     return screen
 
-def menu(first_time, map1, map2):
+def menu(map1, map2):
     # mostly AI unfortunately
     pg.init()
     screen = pg.display.set_mode((1200, 900))
@@ -314,6 +316,8 @@ def menu(first_time, map1, map2):
                         active = False
                         box_color = color_inactive
             selected = None
+            # print(load_mario.active)
+            # print(load_selfmade.active)
             if load_mario.active:
                 selected = map1
                 
