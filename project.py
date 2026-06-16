@@ -82,18 +82,19 @@ def main():
 
             new_wheels = car_wheels
 
-            # if keys[pg.K_UP] and current_speed < 0.5 * max_speed:
-            #     accel_sound.play()
-            # else:
-            #     accel_sound.stop()
-            if current_speed > 0 and not keys[pg.K_DOWN]: 
+            if keys[pg.K_UP] and current_speed < 0.8 * max_speed:
+                accel_sound.play()
+            else:
+                accel_sound.stop()
+            if current_speed > 0.8 * max_speed and not keys[pg.K_DOWN]: 
                 car_sound.play()
             else:
                 car_sound.stop()
-            if keys[pg.K_DOWN] and current_speed > 0:
+            if keys[pg.K_DOWN] and current_speed > 0.5 * max_speed:
                 brake_sound.play()
             else:
                 brake_sound.stop()
+          
 
 
                 
