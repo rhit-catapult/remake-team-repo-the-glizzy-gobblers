@@ -25,8 +25,8 @@ def main():
         brake_sound = pg.mixer.Sound("Car_brake.wav")
         car_sound = pg.mixer.Sound("Car_sound.wav")
     
-        hres = 5000 #horizontal resolution
-        halfvres = 7500 #vertical resolution/2
+        hres = 300 #horizontal resolution
+        halfvres = 512 #vertical resolution/2
         scaling = 60
         mod = hres/scaling #scaling factor (fov set to 60)
         posx, posy, rot = selected.start_x, selected.start_y, selected.start_rot #starting position and rotation angle
@@ -156,7 +156,7 @@ def main():
                 max_speed = static_max
             if current_speed < max_speed and moving_forward: # forward speed increase
                 current_speed += accel
-            print(selected.color(posx,posy))
+            # print(selected.color(posx,posy))
             if selected.color(posx, posy) not in selected.track_colors: #if the car is not on track it should be slower
                 if current_speed > offroad_speed:
                     current_speed -= accel * 4

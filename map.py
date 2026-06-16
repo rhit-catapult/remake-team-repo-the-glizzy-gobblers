@@ -8,6 +8,7 @@ class map:
         self.valid_lap = False
         self.times_list = times_list
         self.player_list = player_list
+        self.threelap = []
         self.track_colors = track_colors
         self.finish_colors = finish_colors
         self.x = x
