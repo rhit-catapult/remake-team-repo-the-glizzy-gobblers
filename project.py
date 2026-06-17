@@ -175,7 +175,7 @@ def main():
             if i == 3: 
                 moving_forward = False
                 moving_backwards = False
-                accel = accel * 1.5
+                accel = 0.00006
                 if current_speed == 0:
                     selected.laps_run, selected.threelaps = ending(screen, selected, player_name)
                     break
@@ -470,7 +470,7 @@ def menu(map1, map2, map3):
         write(screen, 30, "Select a map: ", 50, 220, 'White')
         write(screen, 30, "Name:", 380, 640, 'White')
         if active and True in (load_selfmade.active, load_mario.active, load_circle.active):
-            write(screen, 15, 'Press Escape to Continue', 380, 750, 'White')
+            write(screen, 15, 'Press Enter to Continue', 380, 750, 'White')
         pg.draw.rect(screen, box_color, input_rect, 3)
 
         pg.display.flip()
