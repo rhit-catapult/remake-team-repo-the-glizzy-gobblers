@@ -24,8 +24,8 @@ def main():
        
         car_sound = pg.mixer.Sound("Car_sound.wav")
     
-        hres = 300 #horizontal resolution
-        halfvres = 512 #vertical resolution/2
+        hres = 100 #horizontal resolution
+        halfvres = 150 #vertical resolution/2
         scaling = 60
         mod = hres/scaling #scaling factor (fov set to 60)
         posx, posy, rot = selected.start_x, selected.start_y, selected.start_rot #starting position and rotation angle
