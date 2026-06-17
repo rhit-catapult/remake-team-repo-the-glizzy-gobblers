@@ -15,19 +15,20 @@ def main():
     player_name, selected, exit = menu (map1, map2, map3)
     while selected == None:
         player_name, selected, exit = menu(map1, map2, map3)
-   
+    
     while(not exit):
         pg.init()
         screen = pg.display.set_mode((1200,800)) # size
         running = True # while loop variable
         clock = pg.time.Clock()
+       
         brake_sound = pg.mixer.Sound("Car_brake.wav")
         car_sound = pg.mixer.Sound("Car_sound.wav")
         pg.mixer.music.load("MarioKartMusic.mp3")
         pg.mixer.music.play(-1)
     
-        hres = 100 #horizontal resolution
-        halfvres = 150 #vertical resolution/2
+        hres = 300 #horizontal resolution
+        halfvres = 512 #vertical resolution/2
         scaling = 60
         mod = hres/scaling #scaling factor (fov set to 60)
         posx, posy, rot = selected.start_x, selected.start_y, selected.start_rot #starting position and rotation angle
@@ -124,11 +125,6 @@ def main():
             car_wheels = pg.transform.scale(car_wheels, (1000, 300))
 
             new_wheels = car_wheels
-
-            # if keys[pg.K_UP] and current_speed <= 0.5 * max_speed:
-            #     accel_sound.play()
-            # else:
-            #     accel_sound.stop()
 
             if current_speed - backwards_speed > 0 and not keys[pg.K_DOWN]:
                 car_sound.play() 
@@ -330,10 +326,8 @@ def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, depth, sc
     return frame
 
 def finish(selected, color_int, color_list, lap_time, player_name, valid_lap):
-    lap_sound = pg.mixer.Sound("Lap_sound.wav")
 
     if color_int in color_list: # color of the finish, can be changed
-        lap_sound.play()
         if (time.time() - lap_time > 2): # just make sure it's not too short
             i = 0
             for x in selected.times_list: # add to an array
@@ -417,6 +411,7 @@ def menu(map1, map2, map3):
                     else:
                         load_mario.active = False
                         load_selfmade.active = False
+                        load_circle.active = False
                         active = False
                         box_color = color_inactive
             # print(load_mario.active)
@@ -431,6 +426,7 @@ def menu(map1, map2, map3):
                 selected = map3
 
             if active:
+                
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_BACKSPACE:
                         user_text = user_text[:-1]
@@ -457,6 +453,8 @@ def menu(map1, map2, map3):
         write(screen, 50, "Cart Race!", 375, 120, 'Red')
         write(screen, 30, "Select a map: ", 50, 220, 'White')
         write(screen, 30, "Name:", 380, 640, 'White')
+        if active and True in (load_selfmade.active, load_mario.active, load_circle.active):
+            write(screen, 15, 'Press Escape to Continue', 380, 750, 'White')
         pg.draw.rect(screen, box_color, input_rect, 3)
 
         pg.display.flip()
