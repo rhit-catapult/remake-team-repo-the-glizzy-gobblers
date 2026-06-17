@@ -1,0 +1,5 @@
+# Core dependencies used by project.py
+pygame>=2.1.0
+numpy>=1.23.0
+Pillow>=9.0.0
+# (sys, math, time are stdlib; map and load_map are local modules)

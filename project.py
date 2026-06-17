@@ -15,7 +15,7 @@ def main():
     player_name, selected, exit = menu (map1, map2, map3)
     while selected == None:
         player_name, selected, exit = menu(map1, map2, map3)
-   
+    
     while(not exit):
         pg.init()
         screen = pg.display.set_mode((1200,800)) # size
@@ -24,6 +24,8 @@ def main():
        
         brake_sound = pg.mixer.Sound("Car_brake.wav")
         car_sound = pg.mixer.Sound("Car_sound.wav")
+        pg.mixer.music.load("MarioKartMusic.mp3")
+        pg.mixer.music.play(-1)
     
         hres = 300 #horizontal resolution
         halfvres = 512 #vertical resolution/2
@@ -423,6 +425,7 @@ def menu(map1, map2, map3):
                 selected = map3
 
             if active:
+                
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_BACKSPACE:
                         user_text = user_text[:-1]
@@ -449,6 +452,8 @@ def menu(map1, map2, map3):
         write(screen, 50, "Cart Race!", 375, 120, 'Red')
         write(screen, 30, "Select a map: ", 50, 220, 'White')
         write(screen, 30, "Name:", 380, 640, 'White')
+        if active:
+            write(screen, 15, 'Press Escape to Continue', 380, 750, 'White')
         pg.draw.rect(screen, box_color, input_rect, 3)
 
         pg.display.flip()
