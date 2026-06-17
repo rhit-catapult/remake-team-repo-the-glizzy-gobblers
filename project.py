@@ -10,7 +10,7 @@ import load_map as lm
 def main():
 
     map1 = m.map('MarioKart.png', ['----','----','----'], ['----','----','----'], ['N/A','N/A','N/A'], ['N/A','N/A','N/A'], [22, 23, 29], [28, 30], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[6,16])
-    map2 = m.map('selfmade.png', ['----','----','----'], ['----','----','----'], ['N/A','N/A','N/A'], ['N/A','N/A','N/A'], [2], [3, 4], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[6,16])
+    map2 = m.map('selfmade.png', ['----','----','----'], ['----','----','----'], ['N/A','N/A','N/A'], ['N/A','N/A','N/A'], [2], [8, 9], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[6,16])
     map3 = m.map('circle.png', ['----','----','----'], ['----','----','----'], ['N/A','N/A','N/A'], ['N/A','N/A','N/A'], [2], [5, 6], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[5,10])
     player_name, selected, exit = menu (map1, map2, map3)
     while selected == None:
@@ -221,7 +221,7 @@ def main():
                 max_speed = static_max
             if current_speed < max_speed and moving_forward: # forward speed increase
                 current_speed += accel
-            # print(selected.color(posx,posy))
+            print(selected.color(posx,posy))
             if selected.color(posx, posy) not in selected.track_colors: #if the car is not on track it should be slower
                 if current_speed > offroad_speed:
                     current_speed -= accel * 4
