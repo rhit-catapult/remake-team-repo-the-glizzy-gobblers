@@ -487,7 +487,7 @@ def ending(screen, selected, player_name):
     i = 0
 
     for x in selected.threelaps_times_list: # add to an array
-        if  x == '----' or round(sum(selected.threelaps)) <= x:
+        if  x == '----' or sum(selected.threelaps) <= x:
           
             selected.threelaps_times_list.insert(i, round(sum(selected.threelaps), 2))
             if player_name == '':
