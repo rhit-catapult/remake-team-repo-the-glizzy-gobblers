@@ -24,6 +24,7 @@ def main():
        
         brake_sound = pg.mixer.Sound("Car_brake.wav")
         car_sound = pg.mixer.Sound("Car_sound.wav")
+        explosion_sound = pg.mixer.Sound("Explosion.wav")
         pg.mixer.music.load("MarioKartMusic.mp3")
         pg.mixer.music.play(-1)
     
@@ -61,7 +62,7 @@ def main():
         rot_speed = [0, 0] # stores left speed at index 0 and right speed at index 1
         max_rot_speed = 0.0012
         offroad_speed = max_speed/3
-        
+        explosion_play = False
         turning = [False, False]
         valid_lap = False
         check = time.time()
@@ -132,7 +133,7 @@ def main():
             else:
                 car_sound.stop()
           
-            if keys[pg.K_DOWN] and current_speed > 0:
+            if keys[pg.K_DOWN] and current_speed > 0.4 * max_speed:
                 brake_sound.play()
                 brake_sound.set_volume(current_speed * 200 - backwards_speed * 200)
             else:
@@ -197,7 +198,13 @@ def main():
                     current_speed = 10000
                     turn_speed = 10000
                     max_speed = 10000
-                    turning = [True, False]
+                    turning = [True, False] 
+                    car_sound.stop()
+                    pg.mixer.music.stop()
+                    if explosion_play == False:
+                        explosion_sound.play()
+                        explosion_play = True
+                       
                 if time.time() - out_time > 7:
                     write(screen, 40, "Press R to restart", 250, 300, 'White')
             pg.display.update()
