@@ -11,7 +11,7 @@ def main():
 
     map1 = m.map('MarioKart.png', ['----','----','----'], ['----','----','----'], ['N/A','N/A','N/A'], ['N/A','N/A','N/A'], [22, 23, 29], [28, 30], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[6,16])
     map2 = m.map('selfmade.png', ['----','----','----'], ['----','----','----'], ['N/A','N/A','N/A'], ['N/A','N/A','N/A'], [2], [3, 4], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[6,16])
-    map3 = m.map('circle.png', ['----','----','----'], ['----','----','----'], ['N/A','N/A','N/A'], ['N/A','N/A','N/A'], [2], [3, 4], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[5,10])
+    map3 = m.map('circle.png', ['----','----','----'], ['----','----','----'], ['N/A','N/A','N/A'], ['N/A','N/A','N/A'], [2], [5, 6], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[5,10])
     player_name, selected, exit = menu (map1, map2, map3)
     while selected == None:
         player_name, selected, exit = menu(map1, map2, map3)
@@ -180,8 +180,26 @@ def main():
                     selected.laps_run, selected.threelaps = ending(screen, selected, player_name)
                     break
     
-            
-            
+            not_out = False
+            if (posx <= 30 and posx >= 0 and
+                posy <= 30 and posy >= 0):
+                out_time = time.time()
+                not_out = False
+            else:
+                not_out = True
+                print(out_time)
+                if time.time() - out_time < 5:
+                    timeout = 5 - (time.time() - out_time)
+                    write(screen, 40, "You are out of bounds", 200, 300, 'White')
+                    write(screen, 150, str(round(timeout)), 525, 400, 'White')
+                else:
+                    static_max = 10000
+                    current_speed = 10000
+                    turn_speed = 10000
+                    max_speed = 10000
+                    turning = [True, False]
+                if time.time() - out_time > 7:
+                    write(screen, 40, "Press R to restart", 250, 300, 'White')
             pg.display.update()
             
             # calculations on what speeds should be sent to the movement method below
@@ -196,7 +214,7 @@ def main():
                 max_speed = static_max
             if current_speed < max_speed and moving_forward: # forward speed increase
                 current_speed += accel
-            print(selected.color(posx,posy))
+            # print(selected.color(posx,posy))
             if selected.color(posx, posy) not in selected.track_colors: #if the car is not on track it should be slower
                 if current_speed > offroad_speed:
                     current_speed -= accel * 4
@@ -245,17 +263,15 @@ def main():
                 current_speed = max_speed
             if backwards_speed > max_speed/3:
                 backwards_speed = max_speed/3
-
             # calculating movement below
             posx, posy, rot, moving_forward, moving_backwards, turning = movement(posx, posy, rot, pg.key.get_pressed(), clock.tick(), drift_speed, max_speed, current_speed, backwards_speed, rot_speed, max_rot_speed)
-
             # did we touch the finish line?
-            if posx % 30 < selected.valid_pos[0] and posy % 30 > selected.valid_pos[1]:
+            if posx < selected.valid_pos[0] and posy > selected.valid_pos[1] and not not_out:
                 valid_lap = True
             lap_time, selected.times_list, selected.player_list, selected.laps_run, valid_lap = (finish(selected, selected.color(posx, posy), selected.finish_colors, lap_time, player_name, valid_lap))
-            
+
         player_name, selected, exit = menu(map1, map2, map3)
-    
+
 def movement(posx, posy, rot, keys, et, drift_speed, max_speed, current_speed, backwards_speed, rot_speed, max_rot_speed):
     
     x, y = (posx, posy) # for organizational purposes
