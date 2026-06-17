@@ -411,6 +411,7 @@ def menu(map1, map2, map3):
                     else:
                         load_mario.active = False
                         load_selfmade.active = False
+                        load_circle.active = False
                         active = False
                         box_color = color_inactive
             # print(load_mario.active)
@@ -452,7 +453,7 @@ def menu(map1, map2, map3):
         write(screen, 50, "Cart Race!", 375, 120, 'Red')
         write(screen, 30, "Select a map: ", 50, 220, 'White')
         write(screen, 30, "Name:", 380, 640, 'White')
-        if active:
+        if active and True in (load_selfmade.active, load_mario.active, load_circle.active):
             write(screen, 15, 'Press Escape to Continue', 380, 750, 'White')
         pg.draw.rect(screen, box_color, input_rect, 3)
 
