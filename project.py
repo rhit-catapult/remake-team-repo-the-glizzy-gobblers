@@ -22,10 +22,11 @@ def main():
         running = True # while loop variable
         clock = pg.time.Clock()
        
+        brake_sound = pg.mixer.Sound("Car_brake.wav")
         car_sound = pg.mixer.Sound("Car_sound.wav")
     
-        hres = 100 #horizontal resolution
-        halfvres = 150 #vertical resolution/2
+        hres = 300 #horizontal resolution
+        halfvres = 512 #vertical resolution/2
         scaling = 60
         mod = hres/scaling #scaling factor (fov set to 60)
         posx, posy, rot = selected.start_x, selected.start_y, selected.start_rot #starting position and rotation angle
@@ -123,20 +124,18 @@ def main():
 
             new_wheels = car_wheels
 
-            if keys[pg.K_UP] and current_speed <= 0.5 * max_speed:
-                accel_sound.play()
-            else:
-                accel_sound.stop()
-
-            if keys[pg.K_UP] and current_speed > 0.5 * max_speed and not keys[pg.K_DOWN]:
+            if current_speed - backwards_speed > 0 and not keys[pg.K_DOWN]:
                 car_sound.play() 
+                car_sound.set_volume(current_speed * 100 - backwards_speed * 100)
             else:
                 car_sound.stop()
           
-            if keys[pg.K_DOWN] and current_speed > 0.4 * max_speed:
+            if keys[pg.K_DOWN] and current_speed > 0:
                 brake_sound.play()
+                brake_sound.set_volume(current_speed * 200 - backwards_speed * 200)
             else:
                 brake_sound.stop()
+
             
             if keys[pg.K_LEFT]:
                 new_wheels = pg.transform.rotate(car_wheels, 5)
