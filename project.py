@@ -28,8 +28,8 @@ def main():
         pg.mixer.music.load("MarioKartMusic.mp3")
         pg.mixer.music.play(-1)
     
-        hres = 300 #horizontal resolution
-        halfvres = 512 #vertical resolution/2
+        hres = 150 #horizontal resolution
+        halfvres = 256 #vertical resolution/2
         scaling = 60
         mod = hres/scaling #scaling factor (fov set to 60)
         posx, posy, rot = selected.start_x, selected.start_y, selected.start_rot #starting position and rotation angle
@@ -140,13 +140,13 @@ def main():
                 brake_sound.stop()
 
             
-            if keys[pg.K_LEFT]:
+            if keys[pg.K_LEFT] and current_speed < 0.5 * max_speed:
                 new_wheels = pg.transform.rotate(car_wheels, 5)
-            elif keys[pg.K_RIGHT]:
+            elif keys[pg.K_RIGHT]  and current_speed < 0.5 * max_speed:
                 new_wheels = pg.transform.rotate(car_wheels, -5)
-            elif keys[pg.K_LEFT] and current_speed > 0.5 * max_speed:
+            elif keys[pg.K_LEFT] and current_speed >= 0.5 * max_speed:
                 new_wheels = pg.transform.rotate(car_wheels, 3)
-            elif keys[pg.K_RIGHT] and current_speed > 0.5 * max_speed:
+            elif keys[pg.K_RIGHT] and current_speed >= 0.5 * max_speed:
                 new_wheels = pg.transform.rotate(car_wheels, -3)
             
             rotated_wheels = new_wheels.get_rect(center=car_wheels.get_rect(center=(600, 750)).center)
