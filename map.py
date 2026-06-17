@@ -3,12 +3,14 @@ import sys
 from PIL import Image
 
 class map:
-    def __init__(self, image, times_list, player_list, track_colors, finish_colors, x, y, start_x, start_y, start_rot, valid_pos):
+    def __init__(self, image, times_list, threelaps_times_list, threelaps_player_list, player_list, track_colors, finish_colors, x, y, start_x, start_y, start_rot, valid_pos):
         self.image = image
         self.valid_lap = False
         self.times_list = times_list
+        self.threelaps_times_list = threelaps_times_list
+        self.threelaps_player_list = threelaps_player_list
         self.player_list = player_list
-        self.threelap = []
+        self.threelaps = []
         self.track_colors = track_colors
         self.finish_colors = finish_colors
         self.x = x

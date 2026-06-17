@@ -9,9 +9,9 @@ import load_map as lm
 
 def main():
 
-    map1 = m.map('MarioKart.png', ['----','----','----'], ['N/A','N/A','N/A'], [22, 23, 29], [28, 30], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[6,16])
-    map2 = m.map('Selfmade.png', ['----','----','----'], ['N/A','N/A','N/A'], [2], [3, 4], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[17,7])
-    map3 = m.map('circle.png', ['----','----','----'], ['N/A','N/A','N/A'], [2], [3, 4], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[5,10])
+    map1 = m.map('MarioKart.png', ['----','----','----'], ['----','----','----'], ['N/A','N/A','N/A'], ['N/A','N/A','N/A'], [22, 23, 29], [28, 30], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[6,16])
+    map2 = m.map('selfmade.png', ['----','----','----'], ['----','----','----'], ['N/A','N/A','N/A'], ['N/A','N/A','N/A'], [2], [3, 4], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[6,16])
+    map3 = m.map('circle.png', ['----','----','----'], ['----','----','----'], ['N/A','N/A','N/A'], ['N/A','N/A','N/A'], [2], [3, 4], 1024, 1024, 26.926, 17.938, 1.5 * np.pi,[5,10])
     player_name, selected, exit = menu (map1, map2, map3)
     while selected == None:
         player_name, selected, exit = menu(map1, map2, map3)
@@ -81,6 +81,33 @@ def main():
             for event in pg.event.get(): # detect exiting loop: escape works to close
                 if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
                     running = False
+                if event.type == pg.KEYDOWN and event.key == pg.K_r:
+                    posx, posy, rot = selected.start_x, selected.start_y, selected.start_rot
+                    max_speed = 0.006
+                    static_max = 0.006
+                    
+                    current_speed = 0
+                    backwards_speed = 0
+                    accel = 0.00002
+
+                    if selected.image == map3.image:
+                        max_speed = 0.012
+                        accel = 0.00004
+                        static_max = 0.012
+
+                    turn_speed = max_speed * 0.75
+                    drift_speed = 0.0015
+                    rot_speed = [0, 0] # stores left speed at index 0 and right speed at index 1
+                    max_rot_speed = 0.0012
+                    offroad_speed = max_speed/3
+                    
+                    turning = [False, False]
+                    valid_lap = False
+
+                    lap_time = time.time()
+                    selected.threelaps = []
+                    selected.laps_run = 0
+                    i = 0
 
             keys = pg.key.get_pressed()
 
@@ -133,13 +160,26 @@ def main():
             
             # display all necessary screen info
             write(screen, 20 ,str(round((current_speed - backwards_speed) * 10000, 4)) + " MPH", 850, 700, 'White')
-            write(screen, 20, "Lap " + str(selected.laps_run + 1) + "/3", 40,80, 'White')
+            write(screen, 20, "Lap " + str(min(selected.laps_run + 1, 3)) + "/3", 40,80, 'White')
             write(screen, 20, "Lap time: " + str(round(time.time() - lap_time, 2)), 40, 40, 'White')
             write(screen, 20, 'Fastest Laps:', 850, 40, 'White')
             
+            
             for i in range(0,3):
                 write(screen, 20, str(selected.times_list[i]) + " - " + str(selected.player_list[i]), 850, 80 + i * 40, 'White')
+            i = 0
+            for x in selected.threelaps:
+                i+=1
+                write(screen, 20, "Lap " + str(i) + " - " + str(x), 40, 80 + i * 40, 'White')
             
+            if i == 3: 
+                moving_forward = False
+                moving_backwards = False
+                accel = accel * 1.5
+                if current_speed == 0:
+                    selected.laps_run, selected.threelaps = ending(screen, selected, player_name)
+                    break
+    
             
             
             pg.display.update()
@@ -156,7 +196,7 @@ def main():
                 max_speed = static_max
             if current_speed < max_speed and moving_forward: # forward speed increase
                 current_speed += accel
-            # print(selected.color(posx,posy))
+            print(selected.color(posx,posy))
             if selected.color(posx, posy) not in selected.track_colors: #if the car is not on track it should be slower
                 if current_speed > offroad_speed:
                     current_speed -= accel * 4
@@ -294,13 +334,14 @@ def finish(selected, color_int, color_list, lap_time, player_name, valid_lap):
         
                 if  (x == '----' or time.time() - lap_time <= x) and valid_lap:
                     selected.times_list.insert(i, round(time.time() - lap_time, 2))
+                    selected.threelaps.append(round(time.time() - lap_time, 2))
                     selected.laps_run += 1  
                     if player_name == '':
                         selected.player_list.insert(i, 'Anonymous')
                     else:
                         selected.player_list.insert(i, player_name)
                     break
-                elif selected.times_list.index(x) == len(selected.times_list) - 1:
+                elif selected.times_list.index(x) == len(selected.times_list) - 1 and valid_lap:
                     selected.times_list.append(round(time.time() - lap_time, 2))
                     selected.player_list.append(player_name)
                     selected.laps_run += 1  
@@ -319,6 +360,7 @@ def write(screen, size, text, x, y, color):
     return screen
 
 def menu(map1, map2, map3):
+
     # mostly AI unfortunately
     pg.init()
     screen = pg.display.set_mode((1200, 900))
@@ -330,9 +372,9 @@ def menu(map1, map2, map3):
     color_inactive = pg.Color("lightskyblue3")
     box_color = color_inactive
 
-    load_mario = lm.load_map(screen, 'MarioKart.png', 50, 300)
-    load_selfmade = lm.load_map(screen, 'Selfmade.png', 450, 300)
-    load_circle = lm.load_map(screen, 'circle.png', 850, 300)
+    load_mario = lm.load_map(screen, map1.image, 50, 300)
+    load_selfmade = lm.load_map(screen, map2.image, 450, 300)
+    load_circle = lm.load_map(screen, map3.image, 850, 300)
     map1.laps_run = 0
     map2.laps_run = 0
     map3.laps_run = 0
@@ -402,8 +444,6 @@ def menu(map1, map2, map3):
         input_rect.w = max(440, text_surface.get_width() + 10)
         screen.blit(text_surface, (input_rect.x + 5, input_rect.y + 7))
 
-        
-        # load_hard = lm.load_map(screen, 'Hard.png', 850, 300)
         load_mario.draw()
         load_selfmade.draw()
         load_circle.draw()
@@ -416,6 +456,53 @@ def menu(map1, map2, map3):
         pg.display.flip()
     return user_text, None, exit
 
+def ending(screen, selected, player_name):
+    i = 0
+
+    for x in selected.threelaps_times_list: # add to an array
+        if  x == '----' or round(sum(selected.threelaps)) <= x:
+            selected.times_list.insert(i, round(sum(selected.threelaps), 2))
+            selected.threelaps_times_list.insert(i, round(sum(selected.threelaps), 2))
+            if player_name == '':
+                selected.threelaps_player_list.insert(i, 'Anonymous')
+            else:
+                selected.threelaps_player_list.insert(i, player_name)
+            break
+        elif selected.threelaps_times_list.index(x) == len(selected.threelaps_times_list) - 1:
+            selected.threelaps_times_list.append(round(sum(selected.threelaps), 2))
+            selected.threelaps_player_list.append(player_name)
+        else:
+            i += 1
+
+    running = True
+    while running:
+        for event in pg.event.get():
+            if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
+                running = False
+
+        screen.fill((30, 30, 30))
+
+        write(screen, 20, "Lap " + str(min(selected.laps_run + 1, 3)) + "/3", 40,80, 'White')
+        write(screen, 50, "Finish!", 380, 40, 'Red')
+        write(screen, 30, "Map Leaderboard: ", 385, 300, 'White')
+        write(screen, 20, 'Fastest Laps:', 850, 40, 'White')
+        write(screen, 20, 'Press Escape to Exit', 750, 700, 'White')
+    
+        for x in range (0,3):
+            write(screen, 20, str(selected.times_list[x]) + " - " + str(selected.player_list[x]), 850, 80 + (x) * 40, 'White')
+            
+        for x in range (0,11):
+            if(x < len(selected.threelaps_times_list) and selected.threelaps_times_list[x] != '----'):
+                write(screen, 20, str(x + 1) + '. ' + str(selected.threelaps_times_list[x]) + " - " + str(selected.threelaps_player_list[x]), 390, 340 + (x + 1) * 40, 'White')
+        
+        k = 0
+        for x in selected.threelaps:
+            k+=1
+            write(screen, 20, "Lap " + str(k) + " - " + str(x), 40, 80 + k * 40, 'White')
+        
+        pg.display.update()
+    return 0, []
+    
 
 if __name__ == '__main__':
     main()
